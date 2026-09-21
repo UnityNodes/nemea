@@ -180,6 +180,15 @@ describe("category rotation", () => {
     expect(res.emit).toEqual([]);
   });
 
+  it("ignores a category whose CoinMarketCap timestamp is old, and keeps one with no timestamp", () => {
+    const old = { ...category("c1", "Layer 1", -14), cmcLastUpdated: "2021-03-01T00:00:00.000Z" };
+    const stale = evaluate(input({ holdings, metas, quotes, categories: [old], global: global(-2) }));
+    expect(stale.emit).toEqual([]);
+    const unknown = { ...category("c1", "Layer 1", -14), cmcLastUpdated: null };
+    const kept = evaluate(input({ holdings, metas, quotes, categories: [unknown], global: global(-2) }));
+    expect(kept.emit.map((c) => c.kind)).toEqual(["category_rotation"]);
+  });
+
   it("is silent when the market figure is missing", () => {
     const res = evaluate(input({ holdings, metas, quotes, categories: [category("c1", "Layer 1", -14)], global: global(null) }));
     expect(res.emit).toEqual([]);

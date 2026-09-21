@@ -1,0 +1,125 @@
+# Nemea
+
+> Heracles walked into the valley of Nemea to kill a lion nobody could wound. He won by not fighting it head on. Nemea does the same for a portfolio: crypto's "invincible" drops are survivable when something is watching for you and tells you calmly what is going on.
+
+Nemea is a **non-custodial protection dashboard for casual crypto holders**. It watches your portfolio around the clock with CoinMarketCap data, alerts you when something critical happens (a drop, a stablecoin losing its peg, a volume anomaly, a whole category rotating out), and offers optional protective steps through your own wallet. Every alert has an **Explain like I'm 5** button that turns a panic moment into a learning moment.
+
+**Not a trading bot. Insurance against being offline.** It is not a signal service and not built for people hunting alpha. It is for people who bought crypto and want to keep it.
+
+## Three honest limits
+
+1. **CoinMarketCap rate limits are real.** Nemea reads your key's plan and adapts: for a small portfolio on the free plan the stablecoin peg check runs every 4 minutes, not every minute. `/status` shows the real cadence and every real API call.
+2. **Not financial advice.** Every alert carries the disclaimer. Every protective action is a link you approve in your own wallet.
+3. **Non-custodial by design.** Nemea reads wallets by public address. It never asks for, stores or handles keys or seed phrases, and `pnpm check:claims` fails the build if source code starts to.
+
+Details, numbers and the command that checks each claim: [docs/HONEST_LIMITS.md](docs/HONEST_LIMITS.md).
+
+## Try it
+
+Live demo: TODO(owner): deployed URL. Demo account: none needed. Press **Start as guest**, then **Load a sample portfolio**, then **Try an alert**. TODO(owner): confirm this wording after deploy.
+
+### Run it locally
+
+Prerequisites: Node 22+, pnpm 10.
+
+```bash
+pnpm install
+pnpm dev:stack        # API on :4000 on a fake CoinMarketCap (development only, NOT real market data)
+pnpm dev:web          # web on :3000
+```
+
+Open http://localhost:3000, press **Start as guest**, **Load a sample portfolio**, then **Try an alert** and **Explain like I'm 5**.
+
+With real keys, copy `.env.example` to `.env`, fill it in, and run `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:bot`. Then check that your keys work with the gates:
+
+```bash
+pnpm gate:a   # CoinMarketCap: plan, quotes, global, categories, history, budget
+pnpm gate:b   # wallet read on Ethereum, Base, Arbitrum and CMC matching
+pnpm gate:c   # Telegram: send a test message
+```
+
+A gate that could not run exits 2. A gate that examined nothing never exits 0.
+
+## What it watches
+
+| Alert | Fires when | Default | Data |
+|---|---|---|---|
+| Price drop | a held coin falls more than X% in 1 h or 24 h | 8% / 15% | quotes `percent_change_1h`, `percent_change_24h` |
+| Below cost basis | price crossed below what you paid within the last day | if you entered a cost basis | quotes |
+| Near low | price within X% of the all-time low (or the 365-day low when the plan has no all-time low, labelled as such) | 10% | price-performance-stats or historical |
+| Stablecoin depeg | a held USDT, USDC, DAI or USDe trades below the floor | $0.98 | quotes |
+| Stablecoin volume | volume at least 10x the previous day | 10x | quotes `volume_change_24h` |
+| Volume spike | volume at least 5x the previous day | 5x | quotes |
+| Volume dry-up | volume down 70% while the price falls (a proxy for thin liquidity) | 70% | quotes |
+| Category rotation | a category you hold falls X% and at least 5 points worse than the market | 10% | categories, global metrics |
+| Portfolio drop | portfolio down X% in 24 h, with a breakdown by category ("because Layer 1 is down 18%") | 10% | quotes, info tags, categories |
+
+Alert fatigue is a design constraint: at most 3 non-critical alerts a week (you can lower it), cooldowns per alert, a roll-up so one crash is one alert, and no alert at all on stale or missing data.
+
+**Delivery:** web dashboard, Telegram, email (critical immediately, everything else in one daily digest), browser push. **Protection levels:** 1 alert only (default), 2 alert plus swap links for Uniswap and 1inch that you approve in your own wallet. Level 3 (auto-swap) is not built.
+
+## CoinMarketCap endpoints used
+
+| Endpoint | Used for | When |
+|---|---|---|
+| `/v3/cryptocurrency/quotes/latest` | prices, 1 h / 24 h / 7 d / 30 d change, volume and volume change | every poll, batched to 100 coins per call |
+| `/v3/cryptocurrency/quotes/historical` | "similar drops recovered in X days", peg history, 365-day low | on demand (Explain), cached 6 h |
+| `/v1/global-metrics/quotes/latest` | market-wide move, dominance | every 15 min on a large plan |
+| `/v2/cryptocurrency/info` | tags, category, contract addresses per chain (matches wallet tokens by chain and address) | once per coin, then stored |
+| `/v1/cryptocurrency/categories` | category averages for "because Layer 1 is down X%" and rotation | every 30 min on a large plan |
+| `/v2/cryptocurrency/price-performance-stats/latest` | all-time low, when the plan allows | in the background for your largest holdings, cached 24 h; falls back to historical when the plan does not allow it |
+| `/v1/key/info` | plan limits, so the polling budget is computed, not assumed | at start and hourly |
+
+The `/status` page lists the last real calls with time, endpoint, HTTP status, credits and latency.
+
+## Screenshots
+
+TODO(owner): captured from a stack on real CoinMarketCap data with `CONFIRM_REAL_DATA=1 BASE_URL=<url> node apps/web/scripts/screenshots.mjs`. Dashboard, Telegram alert, Explain like I'm 5.
+
+## Why not just...
+
+- **...a price alert?** A price alert is one number crossing one line for one coin. Nemea builds each alert from your holdings: it knows a stablecoin should be worth $1, that your portfolio fell mostly because one category fell, and that a quote is stale. It also tells you when *not* to worry, using the coin's own history.
+- **...a portfolio tracker?** A tracker shows you what you have. Nemea is silent until something matters and then explains it.
+- **...a trading bot or signal service?** They add risk and demand attention. Nemea never trades, never predicts, and never touches your funds.
+- **...checking the app more often?** Nemea is for the moments you are offline.
+
+## Where CoinMarketCap got in the way
+
+Real friction from building this, so the next builder does not lose the time:
+
+- **Endpoint versions.** v1 and v2 `quotes/latest` and `quotes/historical` are deprecated; v3 returns `data` and `quote` as arrays, older versions return keyed objects. The parser accepts both.
+- **The free plan cannot support a one-minute peg check.** 15,000 credits a month against roughly 43,200 minute-polls. Cadence is planned from `/v1/key/info` and shown honestly.
+- **No all-time low in quotes.** It exists only in `price-performance-stats`, which the pricing matrix does not list for Basic or Builder. Nemea falls back to a labelled 365-day low.
+- **Info by contract address** can return another chain's `platform.token_address`; wallet tokens are matched on `contract_address[]` by chain and address instead.
+- **No liquidity or order-book data** in the basic data, so "sudden liquidity drop" is a volume dry-up proxy and says so.
+- **Category timestamps.** Some categories carry a stale `last_updated` (one shows 2021). Categories older than 6 hours are ignored, so a dead category never explains or triggers anything.
+
+## Roadmap
+
+- Native mobile app
+- More chains
+- DEX-native protection (protective swaps inside the DEX instead of a link)
+- Level 3 auto-swap through a pre-approved agent wallet, opt-in
+- Smart-contract wallet sign-in
+- Referral links once partner IDs exist
+
+## Repository
+
+```
+apps/api       Express + Drizzle service, poller, delivery
+apps/bot       Telegram bot (grammY)
+apps/web       Next.js dashboard
+packages/      shared-types, cmc-client, alerts, chain-reader
+docs/          SCOPE, ARCHITECTURE, HONEST_LIMITS, DEPLOY, SUBMISSION
+scripts/       gates, dev stack, claims check
+```
+
+More: [architecture](docs/ARCHITECTURE.md), [scope and what was cut](docs/SCOPE.md), [deploy](docs/DEPLOY.md).
+
+## Verification status
+
+TODO(owner): this table is filled from the last run; regenerate before submitting.
+
+## Licence
+
+MIT. Built by Unity Nodes.

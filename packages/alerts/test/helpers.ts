@@ -32,7 +32,7 @@ export function meta(cmcId: number, symbol: string, tags: string[] = [], extra: 
 }
 
 export function category(id: string, name: string, avg: number | null): CategorySnapshot {
-  return { id, name, avgPriceChange24hPct: avg, marketCapChange24hPct: avg, volumeChange24hPct: null, numTokens: 50, fetchedAt: NOW.toISOString() };
+  return { id, name, avgPriceChange24hPct: avg, marketCapChange24hPct: avg, volumeChange24hPct: null, numTokens: 50, cmcLastUpdated: new Date(NOW.getTime() - 60_000).toISOString(), fetchedAt: NOW.toISOString() };
 }
 
 export function global(change: number | null): GlobalMetricsSnapshot {

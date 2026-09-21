@@ -240,11 +240,12 @@ describe("other endpoints", () => {
 
   it("parses categories", async () => {
     const { client } = make(() =>
-      json({ status: { error_code: 0 }, data: [{ id: "abc", name: "Layer 1", avg_price_change: -7.5, market_cap_change: -6, volume_change: 20, num_tokens: 150 }, { id: null, name: "broken" }] }),
+      json({ status: { error_code: 0 }, data: [{ id: "abc", name: "Layer 1", avg_price_change: -7.5, market_cap_change: -6, volume_change: 20, num_tokens: 150, last_updated: "2026-09-21T06:00:00.000Z" }, { id: null, name: "broken" }] }),
     );
     const cats = await client.getCategories();
     expect(cats).toHaveLength(1);
     expect(cats[0]?.avgPriceChange24hPct).toBe(-7.5);
+    expect(cats[0]?.cmcLastUpdated).toBe("2026-09-21T06:00:00.000Z");
   });
 
   it("parses historical points from the id-keyed shape", async () => {

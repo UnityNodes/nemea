@@ -62,6 +62,7 @@ export const CategorySnapshot = z.object({
   marketCapChange24hPct: nullableNumber,
   volumeChange24hPct: nullableNumber,
   numTokens: z.number().int().nullable(),
+  cmcLastUpdated: z.string().nullable(),
   fetchedAt: z.string(),
 });
 export type CategorySnapshot = z.infer<typeof CategorySnapshot>;

@@ -164,7 +164,7 @@ export function createFakeCmc(opts: { now?: () => Date } = {}): FakeCmc {
       case "/v1/global-metrics/quotes/latest":
         return json({ status: status(), data: { btc_dominance: 58.2, eth_dominance: 11.4, last_updated: now().toISOString(), quote: { USD: { total_market_cap: 2.9e12, total_market_cap_yesterday_percentage_change: marketChange, total_volume_24h: 1.1e11, stablecoin_volume_24h: 9e10, stablecoin_market_cap: 3.1e11 } } } });
       case "/v1/cryptocurrency/categories":
-        return json({ status: status(), data: [...categories.entries()].map(([name, avg], i) => ({ id: `cat${i}`, name, avg_price_change: avg, market_cap_change: avg, volume_change: 5, num_tokens: 100 })) });
+        return json({ status: status(), data: [...categories.entries()].map(([name, avg], i) => ({ id: `cat${i}`, name, avg_price_change: avg, market_cap_change: avg, volume_change: 5, num_tokens: 100, last_updated: now().toISOString() })) });
       case "/v3/cryptocurrency/quotes/historical": {
         if (!plan.historical) return json({ status: status(0, 1006, "Your API Key subscription plan doesn't support this endpoint.") }, 403);
         const id = ids[0] as number;

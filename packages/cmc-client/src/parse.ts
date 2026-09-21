@@ -153,6 +153,7 @@ export function parseCategories(body: unknown, fetchedAt: string): CategorySnaps
       marketCapChange24hPct: num(c.market_cap_change),
       volumeChange24hPct: num(c.volume_change),
       numTokens: num(c.num_tokens),
+      cmcLastUpdated: str(c.last_updated),
       fetchedAt,
     });
   }
