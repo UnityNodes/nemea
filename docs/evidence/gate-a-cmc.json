@@ -1,0 +1,109 @@
+{
+  "ranAt": "2026-09-21T08:54:27.759Z",
+  "plan": {
+    "creditLimitMonthly": 15000,
+    "rateLimitPerMinute": 50,
+    "creditsUsedMonth": 0,
+    "creditsLeftMonth": 15000,
+    "creditsUsedToday": 0
+  },
+  "stats": {
+    "requests": 10,
+    "creditsSpent": 11,
+    "rateLimited": 0,
+    "planRestricted": 1,
+    "failed": 0
+  },
+  "receipts": [
+    {
+      "at": "2026-09-21T08:54:25.660Z",
+      "endpoint": "/v1/key/info",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 0,
+      "ms": 167,
+      "detail": "ok"
+    },
+    {
+      "at": "2026-09-21T08:54:25.831Z",
+      "endpoint": "/v3/cryptocurrency/quotes/latest",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 1,
+      "ms": 133,
+      "detail": "ok"
+    },
+    {
+      "at": "2026-09-21T08:54:25.965Z",
+      "endpoint": "/v3/cryptocurrency/quotes/latest",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 1,
+      "ms": 360,
+      "detail": "ok"
+    },
+    {
+      "at": "2026-09-21T08:54:26.325Z",
+      "endpoint": "/v1/global-metrics/quotes/latest",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 1,
+      "ms": 138,
+      "detail": "ok"
+    },
+    {
+      "at": "2026-09-21T08:54:26.463Z",
+      "endpoint": "/v1/cryptocurrency/categories",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 1,
+      "ms": 365,
+      "detail": "ok"
+    },
+    {
+      "at": "2026-09-21T08:54:26.829Z",
+      "endpoint": "/v2/cryptocurrency/info",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 1,
+      "ms": 133,
+      "detail": "ok"
+    },
+    {
+      "at": "2026-09-21T08:54:26.963Z",
+      "endpoint": "/v2/cryptocurrency/info",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 1,
+      "ms": 236,
+      "detail": "ok"
+    },
+    {
+      "at": "2026-09-21T08:54:27.200Z",
+      "endpoint": "/v3/cryptocurrency/quotes/historical",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 1,
+      "ms": 141,
+      "detail": "ok"
+    },
+    {
+      "at": "2026-09-21T08:54:27.342Z",
+      "endpoint": "/v2/cryptocurrency/price-performance-stats/latest",
+      "httpStatus": 403,
+      "ok": false,
+      "creditCount": null,
+      "ms": 125,
+      "detail": "Your API Key subscription plan doesn't support this endpoint."
+    },
+    {
+      "at": "2026-09-21T08:54:27.468Z",
+      "endpoint": "/v3/cryptocurrency/quotes/historical",
+      "httpStatus": 200,
+      "ok": true,
+      "creditCount": 4,
+      "ms": 290,
+      "detail": "ok"
+    }
+  ]
+}

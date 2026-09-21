@@ -135,7 +135,7 @@ Status on 2026-09-21. "Not run" means exactly that.
 | Blockscout wallet read on Ethereum, Base, Arbitrum | live run on a public wallet | verified |
 | Etherscan V2 free tier covers Ethereum and Arbitrum, not Base | live probe | verified |
 | CoinMarketCap response shapes and error codes | CoinMarketCap docs and keyless live responses, captured fixtures in tests | verified against docs and keyless responses |
-| **Real CoinMarketCap calls with an API key** | `pnpm gate:a` | **not run**, no key in the build environment |
+| Real CoinMarketCap calls with an API key | `pnpm gate:a` | **passed 2026-09-21** on a Basic key (15,000 credits/month, 50 requests/minute): 10 real calls, 11 credits, evidence in `docs/evidence/gate-a-cmc.json` |
 | **Telegram delivery** | `pnpm gate:c` | **not run**; the bad-token path was confirmed to fail loudly |
 | **Wallet import matched against real CoinMarketCap** | `pnpm gate:b` | **not run** with a real key; matching verified against recorded shapes |
 | Email and browser push | tests with stubs | **not verified** against Resend or a real push service |

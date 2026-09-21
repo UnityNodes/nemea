@@ -131,7 +131,7 @@ await step(
 if (argv.has("--credits")) {
   await step("credit cost of one quotes call with 250 ids (informational: the client batches 100)", async () => {
     const ids = Array.from({ length: 250 }, (_, i) => i + 1).join(",");
-    const base = process.env.CMC_BASE_URL ?? "https://pro-api.coinmarketcap.com";
+    const base = process.env.CMC_BASE_URL?.trim() || "https://pro-api.coinmarketcap.com";
     const res = await fetch(`${base}/v3/cryptocurrency/quotes/latest?id=${ids}&skip_invalid=true&convert=USD`, { headers: { "X-CMC_PRO_API_KEY": CMC_API_KEY }, signal: AbortSignal.timeout(20000) });
     const body = (await res.json()) as { status?: { credit_count?: number; error_message?: string | null }; data?: unknown[] };
     return { value: body, detail: `HTTP ${res.status}, credit_count ${body.status?.credit_count ?? "n/a"}, coins returned ${Array.isArray(body.data) ? body.data.length : "n/a"}${body.status?.error_message ? `, message: ${body.status.error_message}` : ""}`, ok: res.ok };

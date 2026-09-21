@@ -7,7 +7,7 @@ What the code cannot do for you. Sponsor requirements are from CoinMarketCap's h
 
 | # | Item | Owner action |
 |---|---|---|
-| 1 | Real CMC key | Put `CMC_API_KEY` in `.env`, run `pnpm gate:a`. It must exit 0 and writes `docs/evidence/gate-a-cmc.json` (real calls, credits, plan). Commit that file. |
+| 1 | Real CMC key | Done 2026-09-21: `pnpm gate:a` exits 0, evidence in `docs/evidence/gate-a-cmc.json`. Rerun it if the key or plan changes. |
 | 2 | Wallet gate | `pnpm gate:b`. Writes `docs/evidence/gate-b-wallet.json`. |
 | 3 | Telegram gate | Create a bot in @BotFather, put the token in `.env`, message the bot, `pnpm gate:c`. Confirm the test message on your phone. |
 | 4 | Deploy | Web on Vercel, API and bot on Railway, Postgres on Neon or Supabase. Set every variable from `.env.example`. Run one API instance. |

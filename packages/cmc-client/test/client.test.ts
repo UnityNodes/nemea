@@ -161,6 +161,12 @@ describe("error mapping", () => {
     await expect(client.getQuotes([1])).rejects.toBeInstanceOf(CmcHttpError);
   });
 
+  it("uses the official host when the base URL is an empty string, as an unfilled .env line gives", async () => {
+    const { client, calls } = make(() => json(quoteBody([1])), { baseUrl: "" });
+    await client.getQuotes([1]);
+    expect(calls[0]?.host).toBe("pro-api.coinmarketcap.com");
+  });
+
   it("rejects an empty key at construction", () => {
     expect(() => new CmcClient({ apiKey: "" })).toThrow(CmcAuthError);
   });

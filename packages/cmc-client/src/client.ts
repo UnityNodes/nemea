@@ -113,7 +113,7 @@ export class CmcClient {
 
   constructor(private readonly opts: CmcClientOptions) {
     if (!opts.apiKey) throw new CmcAuthError("CMC API key is empty");
-    this.baseUrl = opts.baseUrl ?? "https://pro-api.coinmarketcap.com";
+    this.baseUrl = opts.baseUrl && opts.baseUrl.trim() !== "" ? opts.baseUrl.trim() : "https://pro-api.coinmarketcap.com";
     this.fetchImpl = opts.fetchImpl ?? fetch;
     this.now = opts.now ?? Date.now;
     this.timeoutMs = opts.timeoutMs ?? 10_000;
