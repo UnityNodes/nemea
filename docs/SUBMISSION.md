@@ -9,7 +9,7 @@ What the code cannot do for you. Sponsor requirements are from CoinMarketCap's h
 |---|---|---|
 | 1 | Real CMC key | Done 2026-09-21: `pnpm gate:a` exits 0, evidence in `docs/evidence/gate-a-cmc.json`. Rerun it if the key or plan changes. |
 | 2 | Wallet gate | Done 2026-09-21: `pnpm gate:b` exits 0, evidence in `docs/evidence/gate-b-wallet.json`. |
-| 3 | Telegram gate | Create a bot in @BotFather, put the token in `.env`, message the bot, `pnpm gate:c`. Confirm the test message on your phone. |
+| 3 | Telegram gate | Done 2026-09-21 with `@nemea_alerts_bot`: `pnpm gate:c` exits 0 and the test message arrived. Still to do: link a real account end to end (Settings, Telegram, Link, Start in the bot) on the deployed stack and take the Telegram screenshot for the README. |
 | 4 | Deploy | Web on Vercel, API and bot on Railway, Postgres on Neon or Supabase. Set every variable from `.env.example`. Run one API instance. |
 | 5 | Screenshots | With the deployed stack on real data: `CONFIRM_REAL_DATA=1 BASE_URL=<url> node apps/web/scripts/screenshots.mjs`, commit `docs/screenshots/`. |
 | 6 | README | Fill the two `TODO(owner)` lines: live demo URL and demo account note. |

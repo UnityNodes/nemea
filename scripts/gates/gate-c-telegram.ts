@@ -14,7 +14,7 @@ if (me.status === 404 || !meBody?.ok) {
     status: "fail",
     detail: `HTTP ${me.status} ${meBody?.description ?? ""} — Telegram answers 401 or 404 on getMe when the token belongs to no bot (regenerate it in @BotFather)`,
   });
-  report("Gate C", checks);
+  report("Gate C", checks, ["sendMessage"]);
 }
 checks.push({ name: "getMe", status: "pass", detail: `@${meBody.result?.username} in ${me.ms}ms` });
 
@@ -32,7 +32,7 @@ if (!chatId) {
       status: "not-run" as const,
       detail: `no chats yet — open t.me/${meBody.result?.username}, press Start, rerun (or set TELEGRAM_CHAT_ID)`,
     });
-    report("Gate C", checks);
+    report("Gate C", checks, ["sendMessage"]);
   }
   console.log("chats that messaged the bot:", [...chats.entries()].map(([id, n]) => `${id} (${n})`).join(", "));
   chatId = String([...chats.keys()][0]);
@@ -53,7 +53,7 @@ const sent = await timedJson(api("sendMessage"), {
 const sentBody = sent.body as TgResponse<{ message_id: number }>;
 if (!sentBody?.ok) {
   checks.push({ name: "sendMessage", status: "fail", detail: `HTTP ${sent.status} ${sentBody?.description ?? ""}` });
-  report("Gate C", checks);
+  report("Gate C", checks, ["sendMessage"]);
 }
 checks.push({
   name: "sendMessage",
@@ -75,4 +75,4 @@ checks.push({
   detail: tooLongBody?.ok === false ? `rejected as expected (${tooLongBody.description})` : "Telegram accepted an over-limit message — assumption about the 4096 limit is wrong",
 });
 
-report("Gate C", checks);
+report("Gate C", checks, ["sendMessage"]);

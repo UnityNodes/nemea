@@ -28,7 +28,7 @@ export async function timedJson(url: string, init: RequestInit = {}, timeoutMs =
   return { status: res.status, ms, headers: res.headers, body };
 }
 
-export function report(gate: string, checks: Check[]): never {
+export function report(gate: string, checks: Check[], required: string[] = []): never {
   console.log(`\n${gate} summary`);
   for (const c of checks) {
     const tag = c.status === "pass" ? "PASS" : c.status === "fail" ? "FAIL" : "----";
@@ -36,8 +36,12 @@ export function report(gate: string, checks: Check[]): never {
   }
   const failed = checks.some((c) => c.status === "fail");
   const ranAny = checks.some((c) => c.status === "pass");
+  const missing = required.filter((name) => !checks.some((c) => c.name === name && c.status === "pass"));
   if (failed) process.exit(EXIT_FAIL);
-  if (!ranAny) process.exit(EXIT_NOT_RUN);
+  if (!ranAny || missing.length > 0) {
+    if (missing.length > 0) console.log(`  required check(s) did not pass: ${missing.join(", ")}`);
+    process.exit(EXIT_NOT_RUN);
+  }
   process.exit(EXIT_PASS);
 }
 

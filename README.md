@@ -136,7 +136,7 @@ Status on 2026-09-21. "Not run" means exactly that.
 | Etherscan V2 free tier covers Ethereum and Arbitrum, not Base | live probe | verified |
 | CoinMarketCap response shapes and error codes | CoinMarketCap docs and keyless live responses, captured fixtures in tests | verified against docs and keyless responses |
 | Real CoinMarketCap calls with an API key | `pnpm gate:a` | **passed 2026-09-21** on a Basic key (15,000 credits/month, 50 requests/minute): 10 real calls, 11 credits, evidence in `docs/evidence/gate-a-cmc.json` |
-| **Telegram delivery** | `pnpm gate:c` | **not run**; the bad-token path was confirmed to fail loudly |
+| Telegram delivery | `pnpm gate:c` | **passed 2026-09-21** with a real bot: token accepted, test message accepted by Telegram (message id returned) and confirmed on the owner's phone, and an over-limit message is rejected as expected. No evidence file is committed because it would contain a chat id. The link-code flow between the web app and the bot is covered by tests, not yet exercised end to end against the real bot |
 | Wallet import matched against real CoinMarketCap | `pnpm gate:b` | **passed 2026-09-21** on a public wallet: 78 tokens matched by chain and contract address across Ethereum, Base and Arbitrum, native ETH on all three, unmatched tokens skipped with a reason, evidence in `docs/evidence/gate-b-wallet.json` |
 | Email and browser push | tests with stubs | **not verified** against Resend or a real push service |
 | Deploy on Vercel and Railway | `docs/DEPLOY.md` | **not deployed** |
