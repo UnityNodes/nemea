@@ -28,7 +28,9 @@ pnpm dev:stack        # API on :4000 on a fake CoinMarketCap (development only, 
 pnpm dev:web          # web on :3000
 ```
 
-Open http://localhost:3000, press **Start as guest**, **Load a sample portfolio**, then **Try an alert** and **Explain like I'm 5**.
+Open http://localhost:3000, press **Start as guest**, **Load a sample portfolio**, then **Try an alert** and **Explain like I'm 5**. If port 3000 is taken, run the web app on another port and start the stack with `WEB_ORIGIN=http://localhost:<port> pnpm dev:stack`; the API refuses requests from any other origin.
+
+Measured on 2026-09-21 from a fresh `git clone` with a warm pnpm cache: `pnpm install --frozen-lockfile` 3 s, web app ready 11 s, and the whole journey (guest, sample portfolio, simulated alert, Explain, swap link) 1.6 s over HTTP. A cold install takes longer; time it on your own machine before trusting "under 5 minutes".
 
 With real keys, copy `.env.example` to `.env`, fill it in, and run `pnpm dev:api`, `pnpm dev:web`, `pnpm dev:bot`. Then check that your keys work with the gates:
 
@@ -121,7 +123,25 @@ More: [architecture](docs/ARCHITECTURE.md), [scope and what was cut](docs/SCOPE.
 
 ## Verification status
 
-TODO(owner): this table is filled from the last run; regenerate before submitting.
+Status on 2026-09-21. "Not run" means exactly that.
+
+| Claim | How it is checked | Status |
+|---|---|---|
+| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 508 tests pass |
+| Types | `pnpm typecheck` | passes in every package |
+| No key handling in source | `pnpm check:claims` | passes (132 source files) |
+| Fresh clone to first alert | clone, install, start, walk (see above) | verified |
+| UI at 1280 px and 390 px | Playwright walk of the whole journey against the dev stack | verified on development data |
+| Blockscout wallet read on Ethereum, Base, Arbitrum | live run on a public wallet | verified |
+| Etherscan V2 free tier covers Ethereum and Arbitrum, not Base | live probe | verified |
+| CoinMarketCap response shapes and error codes | CoinMarketCap docs and keyless live responses, captured fixtures in tests | verified against docs and keyless responses |
+| **Real CoinMarketCap calls with an API key** | `pnpm gate:a` | **not run**, no key in the build environment |
+| **Telegram delivery** | `pnpm gate:c` | **not run**; the bad-token path was confirmed to fail loudly |
+| **Wallet import matched against real CoinMarketCap** | `pnpm gate:b` | **not run** with a real key; matching verified against recorded shapes |
+| Email and browser push | tests with stubs | **not verified** against Resend or a real push service |
+| Deploy on Vercel and Railway | `docs/DEPLOY.md` | **not deployed** |
+
+The gates write `docs/evidence/*.json` on a clean run. Commit those files and this table can change from "not run" to a link.
 
 ## Licence
 
