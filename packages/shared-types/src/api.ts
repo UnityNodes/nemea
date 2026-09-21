@@ -89,7 +89,7 @@ export type WalletImportConfirm = z.infer<typeof WalletImportConfirm>;
 export const PreferencesUpdate = AlertPreferences.partial();
 export type PreferencesUpdate = z.infer<typeof PreferencesUpdate>;
 
-export const SimulateScenario = z.enum(["drop", "depeg", "volume_spike"]);
+export const SimulateScenario = z.enum(["drop", "portfolio_drop", "depeg", "volume_spike"]);
 export type SimulateScenario = z.infer<typeof SimulateScenario>;
 export const SimulateRequest = z.object({
   scenario: SimulateScenario,
@@ -149,6 +149,13 @@ export const InternalTelegramLink = z.object({
 });
 export type InternalTelegramLink = z.infer<typeof InternalTelegramLink>;
 
+export type MeView = {
+  user: UserView;
+  preferences: AlertPreferences;
+  channels: ChannelsView;
+  capabilities: { telegram: boolean; email: boolean; push: boolean; wallets: boolean; autoSwap: boolean; telegramBot: string | null };
+};
+
 export type ChannelsView = {
   telegram: { linked: boolean; username: string | null };
   email: { address: string | null; verified: boolean };
@@ -164,11 +171,26 @@ export type PollLaneStatus = {
   itemCount: number;
 };
 
+export type CallReceiptView = {
+  at: string;
+  endpoint: string;
+  httpStatus: number | null;
+  ok: boolean;
+  creditCount: number | null;
+  ms: number;
+  detail: string;
+};
+
 export type SystemStatus = {
   cmcPlan: string | null;
+  rateLimitPerMinute: number | null;
   creditLimitMonthly: number | null;
+  creditsSpentThisRun: number;
+  receipts: CallReceiptView[];
+  channels: { telegram: boolean; email: boolean; push: boolean };
+  pausedUntil: string | null;
   estimatedCreditsPerMonth: number;
-  budgetVerdict: "fits" | "stretched" | "unknown";
+  budgetVerdict: "fits" | "stretched" | "insufficient" | "unknown";
   cadenceMultiplier: number;
   lanes: PollLaneStatus[];
   cache: { hits: number; misses: number };

@@ -1,0 +1,83 @@
+[
+ {
+  "token": {
+   "address_hash": "0x4200000000000000000000000000000000000006",
+   "circulating_market_cap": "632478337.1708548",
+   "circulating_supply": null,
+   "decimals": "18",
+   "exchange_rate": "2661.5",
+   "holders_count": "5246524",
+   "icon_url": "https://assets.coingecko.com/coins/images/39810/small/weth.png?1724139790",
+   "name": "L2 Standard Bridged WETH (Base)",
+   "new_ui_multiplier": null,
+   "reputation": "ok",
+   "symbol": "WETH",
+   "total_supply": "238481299351264316445905",
+   "type": "ERC-20",
+   "ui_multiplier": null,
+   "ui_multiplier_effective_at": null,
+   "volume_24h": "496639016.3683622"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "200381286574121069"
+ },
+ {
+  "token": {
+   "address_hash": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+   "circulating_market_cap": "74223534513.17943",
+   "circulating_supply": null,
+   "decimals": "6",
+   "exchange_rate": "0.999696",
+   "holders_count": "12803385",
+   "icon_url": "https://assets.coingecko.com/coins/images/6319/small/USDC.png?1769615602",
+   "name": "USDC",
+   "new_ui_multiplier": null,
+   "reputation": "ok",
+   "symbol": "USDC",
+   "total_supply": "4277271343790654",
+   "type": "ERC-20",
+   "ui_multiplier": null,
+   "ui_multiplier_effective_at": null,
+   "volume_24h": "13654908801.192589"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "43286078"
+ },
+ {
+  "token": {
+   "address_hash": "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
+   "circulating_market_cap": "661192004.7606452",
+   "circulating_supply": null,
+   "decimals": "18",
+   "exchange_rate": "0.665388",
+   "holders_count": "833439",
+   "icon_url": "https://assets.coingecko.com/coins/images/31745/small/token.png?1696530564",
+   "name": "Aerodrome Finance",
+   "new_ui_multiplier": null,
+   "reputation": "ok",
+   "symbol": "AERO",
+   "total_supply": "1983240735576791446735550579",
+   "type": "ERC-20",
+   "ui_multiplier": null,
+   "ui_multiplier_effective_at": null,
+   "volume_24h": "42004130.354265705"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "3782620924200000000"
+ },
+ {
+  "token": null,
+  "token_id": null,
+  "token_instance": null,
+  "value": "1000000000000000000000"
+ },
+ {
+  "token": null,
+  "token_id": null,
+  "token_instance": null,
+  "value": "1"
+ }
+]

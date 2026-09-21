@@ -1,0 +1,82 @@
+[
+ {
+  "token": {
+   "address_hash": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+   "circulating_market_cap": "74222624094.2008",
+   "circulating_supply": null,
+   "decimals": "6",
+   "exchange_rate": "0.999701",
+   "holders_count": "5716493",
+   "icon_url": "https://assets.coingecko.com/coins/images/6319/small/USDC.png?1769615602",
+   "name": "USDC",
+   "reputation": "ok",
+   "symbol": "USDC",
+   "total_supply": "2804019001475738",
+   "type": "ERC-20",
+   "volume_24h": "13769723009.715242"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "158021811"
+ },
+ {
+  "token": {
+   "address_hash": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+   "circulating_market_cap": "274588777.59082717",
+   "circulating_supply": null,
+   "decimals": "18",
+   "exchange_rate": "1911.21",
+   "holders_count": "412595",
+   "icon_url": "https://assets.coingecko.com/coins/images/39713/small/WETH.PNG?1723731496",
+   "name": "Arbitrum Bridged WETH (Arbitrum One)",
+   "reputation": "ok",
+   "symbol": "WETH",
+   "total_supply": "107323037019281934238175",
+   "type": "ERC-20",
+   "volume_24h": "98369152.43511754"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "16330169236089097"
+ },
+ {
+  "token": {
+   "address_hash": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+   "circulating_market_cap": "523283716.81390655",
+   "circulating_supply": null,
+   "decimals": "18",
+   "exchange_rate": "0.079132",
+   "holders_count": "2397475",
+   "icon_url": "https://assets.coingecko.com/coins/images/16547/small/arb.jpg?1721358242",
+   "name": "Arbitrum",
+   "reputation": "ok",
+   "symbol": "ARB",
+   "total_supply": "9999998977610261816650915825",
+   "type": "ERC-20",
+   "volume_24h": "33823033.38197448"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "23671066717268252605"
+ },
+ {
+  "token": {
+   "address_hash": "0xd2199c6594a48EbebE53637097356a757d19A948",
+   "circulating_market_cap": null,
+   "circulating_supply": null,
+   "decimals": "18",
+   "exchange_rate": null,
+   "holders_count": "249",
+   "icon_url": null,
+   "name": "AISHIB",
+   "reputation": "ok",
+   "symbol": "AISHIB",
+   "total_supply": "7777777777777777000000000000000000",
+   "type": "ERC-20",
+   "volume_24h": null
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "3333333333333333000000000000000000"
+ }
+]

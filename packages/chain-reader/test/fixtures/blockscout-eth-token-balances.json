@@ -1,0 +1,162 @@
+[
+ {
+  "token": {
+   "address_hash": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+   "circulating_market_cap": "5615560182.868838",
+   "circulating_supply": null,
+   "decimals": "18",
+   "exchange_rate": "2670.78",
+   "holders_count": "3348944",
+   "icon_url": "https://assets.coingecko.com/coins/images/2518/small/weth.png?1696503332",
+   "name": "WETH",
+   "reputation": "ok",
+   "symbol": "WETH",
+   "total_supply": "2104525585177793683090641",
+   "type": "ERC-20",
+   "volume_24h": "336804064.5000708"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "1461898174019088870"
+ },
+ {
+  "token": {
+   "address_hash": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+   "circulating_market_cap": "183324216698.8648",
+   "circulating_supply": null,
+   "decimals": "6",
+   "exchange_rate": "0.999666",
+   "holders_count": "17324254",
+   "icon_url": "https://assets.coingecko.com/coins/images/325/small/Tether.png?1696501661",
+   "name": "Tether",
+   "reputation": "ok",
+   "symbol": "USDT",
+   "total_supply": "88304342264551152",
+   "type": "ERC-20",
+   "volume_24h": "51822984923.976135"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "291368219"
+ },
+ {
+  "token": {
+   "address_hash": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+   "circulating_market_cap": "74221567407.96805",
+   "circulating_supply": null,
+   "decimals": "6",
+   "exchange_rate": "0.999695",
+   "holders_count": "9341494",
+   "icon_url": "https://raw.githubusercontent.com/ulyanas/frontend-configs/add-usdc-eurc-latest-token-icons/configs/token-icons/USDC_latest.svg",
+   "name": "USDC",
+   "reputation": "ok",
+   "symbol": "USDC",
+   "total_supply": "49845689979971109",
+   "type": "ERC-20",
+   "volume_24h": "13360534005.697083"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "37192124"
+ },
+ {
+  "token": {
+   "address_hash": "0x28561B8A2360F463011c16b6Cc0B0cbEF8dbBcad",
+   "circulating_market_cap": "1841614.3262050184",
+   "circulating_supply": null,
+   "decimals": "9",
+   "exchange_rate": "0.00000437",
+   "holders_count": "45085",
+   "icon_url": "https://assets.coingecko.com/coins/images/50348/small/1000000612.jpg?1727248974",
+   "name": "MOO DENG",
+   "reputation": "ok",
+   "symbol": "MOODENG",
+   "total_supply": "420690000000000000000",
+   "type": "ERC-20",
+   "volume_24h": "103292.01561594047"
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "30002309255968834506"
+ },
+ {
+  "token": {
+   "address_hash": "0x57f1887a8BF19b14fC0dF6Fd9B2acc9Af147eA85",
+   "circulating_market_cap": null,
+   "circulating_supply": null,
+   "decimals": null,
+   "exchange_rate": null,
+   "holders_count": "694321",
+   "icon_url": "https://assets.coingecko.com/nft_contracts/images/373/small/ens-ethereum-name-service.png?1705042056",
+   "name": "Ethereum Name Service",
+   "reputation": "ok",
+   "symbol": "ENS",
+   "total_supply": null,
+   "type": "ERC-721",
+   "volume_24h": null
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "473"
+ },
+ {
+  "token": {
+   "address_hash": "0x495f947276749Ce646f68AC8c248420045cb7b5e",
+   "circulating_market_cap": null,
+   "circulating_supply": null,
+   "decimals": null,
+   "exchange_rate": null,
+   "holders_count": "711205",
+   "icon_url": null,
+   "name": "OpenSea Shared Storefront",
+   "reputation": "ok",
+   "symbol": "OPENSTORE",
+   "total_supply": null,
+   "type": "ERC-1155",
+   "volume_24h": null
+  },
+  "token_id": "57725646705246002864223488288571718187062359951805496866472489638783224906728",
+  "token_instance": null,
+  "value": "200"
+ },
+ {
+  "token": {
+   "address_hash": "0x6B491AE7f8E15B6FBec0D4F084F6C42763e9ea4F",
+   "circulating_market_cap": null,
+   "circulating_supply": null,
+   "decimals": null,
+   "exchange_rate": null,
+   "holders_count": "2",
+   "icon_url": null,
+   "name": null,
+   "reputation": "ok",
+   "symbol": null,
+   "total_supply": "2100000000000000000000000",
+   "type": "ERC-20",
+   "volume_24h": null
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "300000000000000000000000"
+ },
+ {
+  "token": {
+   "address_hash": "0x7B1395239E9dCE0f4bC676F9Ad0c0a671De02d67",
+   "circulating_market_cap": null,
+   "circulating_supply": null,
+   "decimals": "9",
+   "exchange_rate": null,
+   "holders_count": "3",
+   "icon_url": null,
+   "name": "HUSKY",
+   "reputation": "ok",
+   "symbol": null,
+   "total_supply": "100000000000000000000000000",
+   "type": "ERC-20",
+   "volume_24h": null
+  },
+  "token_id": null,
+  "token_instance": null,
+  "value": "9819639278557114228456913"
+ }
+]

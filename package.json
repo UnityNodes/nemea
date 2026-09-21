@@ -4,13 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "packageManager": "pnpm@10.30.1",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "vitest run",
-    "gate:a": "tsx scripts/gates/gate-a-cmc.ts",
-    "gate:b": "tsx scripts/gates/gate-b-wallet.ts",
-    "gate:c": "tsx scripts/gates/gate-c-telegram.ts",
+    "gate:a": "tsx --env-file-if-exists=.env scripts/gates/gate-a-cmc.ts",
+    "gate:b": "tsx --env-file-if-exists=.env scripts/gates/gate-b-wallet.ts",
+    "gate:c": "tsx --env-file-if-exists=.env scripts/gates/gate-c-telegram.ts",
     "dev:api": "pnpm --filter @nemea/api dev",
     "dev:web": "pnpm --filter @nemea/web dev",
     "dev:bot": "pnpm --filter @nemea/bot dev"
@@ -19,6 +21,9 @@
     "@types/node": "^22.10.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "@nemea/cmc-client": "workspace:*",
+    "@nemea/alerts": "workspace:*",
+    "@nemea/shared-types": "workspace:*"
   }
 }
