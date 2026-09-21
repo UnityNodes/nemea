@@ -137,7 +137,7 @@ Status on 2026-09-21. "Not run" means exactly that.
 | CoinMarketCap response shapes and error codes | CoinMarketCap docs and keyless live responses, captured fixtures in tests | verified against docs and keyless responses |
 | Real CoinMarketCap calls with an API key | `pnpm gate:a` | **passed 2026-09-21** on a Basic key (15,000 credits/month, 50 requests/minute): 10 real calls, 11 credits, evidence in `docs/evidence/gate-a-cmc.json` |
 | **Telegram delivery** | `pnpm gate:c` | **not run**; the bad-token path was confirmed to fail loudly |
-| **Wallet import matched against real CoinMarketCap** | `pnpm gate:b` | **not run** with a real key; matching verified against recorded shapes |
+| Wallet import matched against real CoinMarketCap | `pnpm gate:b` | **passed 2026-09-21** on a public wallet: 78 tokens matched by chain and contract address across Ethereum, Base and Arbitrum, native ETH on all three, unmatched tokens skipped with a reason, evidence in `docs/evidence/gate-b-wallet.json` |
 | Email and browser push | tests with stubs | **not verified** against Resend or a real push service |
 | Deploy on Vercel and Railway | `docs/DEPLOY.md` | **not deployed** |
 

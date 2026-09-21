@@ -1,0 +1,657 @@
+{
+  "ranAt": "2026-09-21T08:59:25.244Z",
+  "wallet": "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+  "items": [
+    {
+      "cmcId": 25009,
+      "symbol": "FOXE",
+      "name": "Foxe",
+      "amount": 1777819000000.1777,
+      "chain": "ethereum",
+      "contractAddress": "0x378e1be15be6d6d1f23cfe7090b6a77660dbf14d"
+    },
+    {
+      "cmcId": 30142,
+      "symbol": "GAGA",
+      "name": "Gaga (Pepe)",
+      "amount": 100000230719.5932,
+      "chain": "ethereum",
+      "contractAddress": "0xb29dc1703facd2967bb8ade2e392385644c6dca9"
+    },
+    {
+      "cmcId": 33076,
+      "symbol": "MOODENG",
+      "name": "MOO DENG (moodeng.vip)",
+      "amount": 30002309255.968834,
+      "chain": "ethereum",
+      "contractAddress": "0x28561b8a2360f463011c16b6cc0b0cbef8dbbcad"
+    },
+    {
+      "cmcId": 39459,
+      "symbol": "WOJAK",
+      "name": "wojak (wojakcto.com)",
+      "amount": 15395266187.206408,
+      "chain": "ethereum",
+      "contractAddress": "0x8de39b057cc6522230ab19c0205080a8663331ef"
+    },
+    {
+      "cmcId": 34143,
+      "symbol": "WHITE",
+      "name": "WhiteRock",
+      "amount": 10000000000,
+      "chain": "ethereum",
+      "contractAddress": "0x9cdf242ef7975d8c68d5c1f5b6905801699b1940"
+    },
+    {
+      "cmcId": 24791,
+      "symbol": "OGSM",
+      "name": "OGSMINEM",
+      "amount": 3018052014,
+      "chain": "ethereum",
+      "contractAddress": "0x9778ac3d5a2f916aa9abf1eb85c207d990ca2655"
+    },
+    {
+      "cmcId": 30787,
+      "symbol": "BIRDDOG",
+      "name": "Bird Dog",
+      "amount": 358886846.21899,
+      "chain": "ethereum",
+      "contractAddress": "0xf6ce4be313ead51511215f1874c898239a331e37"
+    },
+    {
+      "cmcId": 29877,
+      "symbol": "ISHI",
+      "name": "Ishi",
+      "amount": 200000000,
+      "chain": "ethereum",
+      "contractAddress": "0x85e0b9d3e7e4dba7e59090c533906d0e9211d8b6"
+    },
+    {
+      "cmcId": 33838,
+      "symbol": "MEH",
+      "name": "Meh",
+      "amount": 167146371,
+      "chain": "ethereum",
+      "contractAddress": "0x1f38d22f4ec3479c8268c85476b9418716bdb115"
+    },
+    {
+      "cmcId": 28435,
+      "symbol": "WEB",
+      "name": "Web-x-ai",
+      "amount": 100010000,
+      "chain": "ethereum",
+      "contractAddress": "0x2b81945875f892aff04af0a298d35fb2cf848c7b"
+    },
+    {
+      "cmcId": 32625,
+      "symbol": "FUKU",
+      "name": "Fuku-Kun",
+      "amount": 50000000,
+      "chain": "ethereum",
+      "contractAddress": "0x1001271083c249bd771e1bb76c22d935809a61ee"
+    },
+    {
+      "cmcId": 33689,
+      "symbol": "PEEZY",
+      "name": "Peezy 0x69",
+      "amount": 19816969,
+      "chain": "ethereum",
+      "contractAddress": "0x698b1d54e936b9f772b8f58447194bbc82ec1933"
+    },
+    {
+      "cmcId": 34312,
+      "symbol": "LFDOG",
+      "name": "lifedog",
+      "amount": 10000000,
+      "chain": "ethereum",
+      "contractAddress": "0x425087bf4969f45818c225ae30f8560ce518582e"
+    },
+    {
+      "cmcId": 33668,
+      "symbol": "SPX2.0",
+      "name": "SPX6900 2.0",
+      "amount": 2588640.1471344745,
+      "chain": "ethereum",
+      "contractAddress": "0x230ea9aed5d08afdb22cd3c06c47cf24ad501301"
+    },
+    {
+      "cmcId": 25666,
+      "symbol": "MUZZ",
+      "name": "MuzzleToken",
+      "amount": 1000000,
+      "chain": "ethereum",
+      "contractAddress": "0xef3daa5fda8ad7aabff4658f1f78061fd626b8f0"
+    },
+    {
+      "cmcId": 20561,
+      "symbol": "M87",
+      "name": "MESSIER",
+      "amount": 878787,
+      "chain": "ethereum",
+      "contractAddress": "0x80122c6a83c8202ea365233363d3f4837d13e888"
+    },
+    {
+      "cmcId": 1982,
+      "symbol": "KNCL",
+      "name": "Kyber Network Crystal Legacy",
+      "amount": 700008.531373792,
+      "chain": "ethereum",
+      "contractAddress": "0xdd974d5c2e2928dea5f71b9825b8b646686bd200"
+    },
+    {
+      "cmcId": 41892,
+      "symbol": "FOLD",
+      "name": "The Interfold",
+      "amount": 240000,
+      "chain": "ethereum",
+      "contractAddress": "0xe172e9b6cfbeeb5593bdce3f077356fdb33af904"
+    },
+    {
+      "cmcId": 1808,
+      "symbol": "OMG",
+      "name": "OMG Network",
+      "amount": 123647.03042853207,
+      "chain": "ethereum",
+      "contractAddress": "0xd26114cd6ee289accf82350c8d8487fedb8a0c07"
+    },
+    {
+      "cmcId": 17995,
+      "symbol": "JUSTICE",
+      "name": "AssangeDAO",
+      "amount": 100685,
+      "chain": "ethereum",
+      "contractAddress": "0x59d1e836f7b7210a978b25a855085cc46fd090b5"
+    },
+    {
+      "cmcId": 23415,
+      "symbol": "BAG",
+      "name": "tehBag",
+      "amount": 100000,
+      "chain": "ethereum",
+      "contractAddress": "0x235c8ee913d93c68d2902a8e0b5a643755705726"
+    },
+    {
+      "cmcId": 5070,
+      "symbol": "XTP",
+      "name": "Tap",
+      "amount": 18309.270170566593,
+      "chain": "ethereum",
+      "contractAddress": "0x6368e1e18c4c419ddfc608a0bed1ccb87b9250fc"
+    },
+    {
+      "cmcId": 2348,
+      "symbol": "MDT",
+      "name": "Measurable Data Token",
+      "amount": 10000,
+      "chain": "ethereum",
+      "contractAddress": "0x814e0908b12a99fecf5bc101bb5d0b8b5cdf7d26"
+    },
+    {
+      "cmcId": 21134,
+      "symbol": "SQGROW",
+      "name": "SquidGrow",
+      "amount": 4342.295758587,
+      "chain": "ethereum",
+      "contractAddress": "0xb72e76ccf005313868db7b48070901a44629da98"
+    },
+    {
+      "cmcId": 7080,
+      "symbol": "GALA",
+      "name": "Gala",
+      "amount": 3386.9461755,
+      "chain": "ethereum",
+      "contractAddress": "0xd1d2eb1b1e90b638588728b4130137d262c87cae"
+    },
+    {
+      "cmcId": 17722,
+      "symbol": "WALLET",
+      "name": "Ambire Wallet",
+      "amount": 1236.000001,
+      "chain": "ethereum",
+      "contractAddress": "0x88800092ff476844f74dc2fc427974bbee2794ae"
+    },
+    {
+      "cmcId": 13855,
+      "symbol": "ENS",
+      "name": "Ethereum Name Service",
+      "amount": 1144.0360760636715,
+      "chain": "ethereum",
+      "contractAddress": "0xc18360217d8f7ab5e7c516566761ea12ce7f9d72"
+    },
+    {
+      "cmcId": 1934,
+      "symbol": "LRC",
+      "name": "Loopring",
+      "amount": 1000.3219204506854,
+      "chain": "ethereum",
+      "contractAddress": "0xbbbbca6a901c926f240b89eacb641d8aec7aeafd"
+    },
+    {
+      "cmcId": 21137,
+      "symbol": "ANARCHY",
+      "name": "Anarchy",
+      "amount": 666,
+      "chain": "ethereum",
+      "contractAddress": "0x53fd2342b43ecd24aef1535bc3797f509616ce8c"
+    },
+    {
+      "cmcId": 27592,
+      "symbol": "BTC2.0",
+      "name": "Bitcoin 2.0",
+      "amount": 627.52,
+      "chain": "ethereum",
+      "contractAddress": "0x3feb4fea5132695542f8ede5076ac43296d17c6d"
+    },
+    {
+      "cmcId": 39521,
+      "symbol": "AZTEC",
+      "name": "Aztec",
+      "amount": 587.3061864836396,
+      "chain": "ethereum",
+      "contractAddress": "0xa27ec0006e59f245217ff08cd52a7e8b169e62d2"
+    },
+    {
+      "cmcId": 825,
+      "symbol": "USDT",
+      "name": "Tether USDt",
+      "amount": 291.368219,
+      "chain": "ethereum",
+      "contractAddress": "0xdac17f958d2ee523a2206206994597c13d831ec7"
+    },
+    {
+      "cmcId": 8049,
+      "symbol": "TORN",
+      "name": "Tornado Cash",
+      "amount": 242.9157908070309,
+      "chain": "ethereum",
+      "contractAddress": "0x77777feddddffc19ff86db637967013e6c6a116c"
+    },
+    {
+      "cmcId": 31171,
+      "symbol": "BOOE",
+      "name": "Book of Ethereum",
+      "amount": 179.1337,
+      "chain": "ethereum",
+      "contractAddress": "0x289ff00235d2b98b0145ff5d4435d3e92f9540a6"
+    },
+    {
+      "cmcId": 11865,
+      "symbol": "BONE",
+      "name": "Bone ShibaSwap",
+      "amount": 150,
+      "chain": "ethereum",
+      "contractAddress": "0x9813037ee2218799597d83d4a5b6f3b6778218d9"
+    },
+    {
+      "cmcId": 2071,
+      "symbol": "REQ",
+      "name": "Request",
+      "amount": 126,
+      "chain": "ethereum",
+      "contractAddress": "0x8f8221afbb33998d8584a2b05749ba73c37a938a"
+    },
+    {
+      "cmcId": 23624,
+      "symbol": "XFT",
+      "name": "Offshift [New]",
+      "amount": 99,
+      "chain": "ethereum",
+      "contractAddress": "0x76bc677d444f1e9d57daf5187ee2b7dc852745ae"
+    },
+    {
+      "cmcId": 24533,
+      "symbol": "APED",
+      "name": "APED",
+      "amount": 50.00028289,
+      "chain": "ethereum",
+      "contractAddress": "0xe0151763455a8a021e64880c238ba1cff3787ff0"
+    },
+    {
+      "cmcId": 3408,
+      "symbol": "USDC",
+      "name": "USDC",
+      "amount": 37.192124,
+      "chain": "ethereum",
+      "contractAddress": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+    },
+    {
+      "cmcId": 26081,
+      "symbol": "FDUSD",
+      "name": "First Digital USD",
+      "amount": 20.644611,
+      "chain": "ethereum",
+      "contractAddress": "0xc5f0f7b66764f6ec8c8dff7ba683102295e16409"
+    },
+    {
+      "cmcId": 29470,
+      "symbol": "USDe",
+      "name": "Ethena USDe",
+      "amount": 14.73979,
+      "chain": "ethereum",
+      "contractAddress": "0x4c9edd5852cd905f086c759e8383e09bff1e68b3"
+    },
+    {
+      "cmcId": 33590,
+      "symbol": "WAAC",
+      "name": "Wrapped  AyeAyeCoin",
+      "amount": 12,
+      "chain": "ethereum",
+      "contractAddress": "0x30ae41d5f9988d359c733232c6c693c0e645c77e"
+    },
+    {
+      "cmcId": 1027,
+      "symbol": "ETH",
+      "name": "Ethereum",
+      "amount": 6.71260315370163,
+      "chain": "ethereum",
+      "contractAddress": null
+    },
+    {
+      "cmcId": 23888,
+      "symbol": "USDGLO",
+      "name": "Glo Dollar",
+      "amount": 5,
+      "chain": "ethereum",
+      "contractAddress": "0x4f604735c1cf31399c6e711d5962b2b3e0225ad3"
+    },
+    {
+      "cmcId": 34963,
+      "symbol": "WMC",
+      "name": "Wrapped MistCoin",
+      "amount": 3.68,
+      "chain": "ethereum",
+      "contractAddress": "0x7fd4d7737597e7b4ee22acbf8d94362343ae0a79"
+    },
+    {
+      "cmcId": 8525,
+      "symbol": "RAI",
+      "name": "Rai Reflex Index",
+      "amount": 3.366907695158744,
+      "chain": "ethereum",
+      "contractAddress": "0x03ab458634910aad20ef5f1c8ee96f1d6ac54919"
+    },
+    {
+      "cmcId": 2396,
+      "symbol": "WETH",
+      "name": "WETH",
+      "amount": 1.4618981740190888,
+      "chain": "ethereum",
+      "contractAddress": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    },
+    {
+      "cmcId": 2308,
+      "symbol": "SAI",
+      "name": "Single Collateral DAI ",
+      "amount": 0.7988,
+      "chain": "ethereum",
+      "contractAddress": "0x89d24a6b4ccb1b6faa2625fe562bdd9a23260359"
+    },
+    {
+      "cmcId": 28695,
+      "symbol": "weETH",
+      "name": "Wrapped eETH",
+      "amount": 0.004367159865037863,
+      "chain": "ethereum",
+      "contractAddress": "0xcd5fe23c85820f7b72d0926fc9b05b43e359b7ee"
+    },
+    {
+      "cmcId": 33513,
+      "symbol": "kBTC",
+      "name": "Kraken Wrapped Bitcoin",
+      "amount": 0.0001,
+      "chain": "ethereum",
+      "contractAddress": "0x73e0c0d45e048d25fc26fa3159b0aa04bfa4db98"
+    },
+    {
+      "cmcId": 32994,
+      "symbol": "CBBTC",
+      "name": "Coinbase Wrapped BTC",
+      "amount": 0.00008032,
+      "chain": "ethereum",
+      "contractAddress": "0xcbb7c0000ab88b473b1f5afd9ef808440eed33bf"
+    },
+    {
+      "cmcId": 30657,
+      "symbol": "TOBY",
+      "name": "toby",
+      "amount": 2170427191,
+      "chain": "base",
+      "contractAddress": "0xb8d98a102b0079b69ffbc760c8d857a31653e56e"
+    },
+    {
+      "cmcId": 30096,
+      "symbol": "DEGEN",
+      "name": "Degen",
+      "amount": 3000574.185146692,
+      "chain": "base",
+      "contractAddress": "0x4ed4e862860bed51a9570b96d89af5e1b0efefed"
+    },
+    {
+      "cmcId": 12983,
+      "symbol": "PAWTH",
+      "name": "Pawthereum",
+      "amount": 284969,
+      "chain": "base",
+      "contractAddress": "0x875ee70143fca7d78e03ee6b13a2b0d68be4af0c"
+    },
+    {
+      "cmcId": 11557,
+      "symbol": "DOG",
+      "name": "Own The Doge",
+      "amount": 119541.79257155303,
+      "chain": "base",
+      "contractAddress": "0xafb89a09d82fbde58f18ac6437b3fc81724e4df6"
+    },
+    {
+      "cmcId": 30646,
+      "symbol": "PURR",
+      "name": "Purrcoin",
+      "amount": 88685.5860231788,
+      "chain": "base",
+      "contractAddress": "0xe4fcf2d991505089bbb36275570757c1f9800cb0"
+    },
+    {
+      "cmcId": 33819,
+      "symbol": "RUSSELL",
+      "name": "Russell",
+      "amount": 42069,
+      "chain": "base",
+      "contractAddress": "0x0c5142bc58f9a61ab8c3d2085dd2f4e550c5ce0b"
+    },
+    {
+      "cmcId": 34651,
+      "symbol": "AIYP",
+      "name": "Agent YP by Virtuals",
+      "amount": 35935,
+      "chain": "base",
+      "contractAddress": "0x919e43a2cce006710090e64bde9e01b38fd7f32f"
+    },
+    {
+      "cmcId": 35299,
+      "symbol": "JAIHOZ",
+      "name": "Jaihoz by Virtuals",
+      "amount": 13052,
+      "chain": "base",
+      "contractAddress": "0xe2816b27a5613b0aaf5d6dafa80584156e2fb1b6"
+    },
+    {
+      "cmcId": 28264,
+      "symbol": "PREME",
+      "name": "PREME Token",
+      "amount": 11111,
+      "chain": "base",
+      "contractAddress": "0x8c62ac3b71db8c81a764b84ffbc2a8d0bad7f111"
+    },
+    {
+      "cmcId": 35539,
+      "symbol": "EVAL",
+      "name": "EVAL Engine",
+      "amount": 6698,
+      "chain": "base",
+      "contractAddress": "0xdd78523217390bb0d49c7601e7e54c36d71622f0"
+    },
+    {
+      "cmcId": 32289,
+      "symbol": "MIGGLES",
+      "name": "Mr Miggles",
+      "amount": 2149.9941395278424,
+      "chain": "base",
+      "contractAddress": "0xb1a03eda10342529bbf8eb700a06c60441fef25d"
+    },
+    {
+      "cmcId": 38767,
+      "symbol": "NOCK",
+      "name": "Nockchain",
+      "amount": 279.347353241922,
+      "chain": "base",
+      "contractAddress": "0x9b5e262cf9bb04869ab40b19af91d2dc85761722"
+    },
+    {
+      "cmcId": 34829,
+      "symbol": "PEPEC",
+      "name": "Pepe Clanker",
+      "amount": 58.07267104287533,
+      "chain": "base",
+      "contractAddress": "0x1196c6704789620514fd25632abe15f69a50bc4f"
+    },
+    {
+      "cmcId": 3408,
+      "symbol": "USDC",
+      "name": "USDC",
+      "amount": 43.286078,
+      "chain": "base",
+      "contractAddress": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
+    },
+    {
+      "cmcId": 825,
+      "symbol": "USDT",
+      "name": "Tether USDt",
+      "amount": 6.768453,
+      "chain": "base",
+      "contractAddress": "0xfde4c96c8593536e31f229ea8f37b2ada2699bb2"
+    },
+    {
+      "cmcId": 27763,
+      "symbol": "USDbC",
+      "name": "Bridged USDC",
+      "amount": 4.390786,
+      "chain": "base",
+      "contractAddress": "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca"
+    },
+    {
+      "cmcId": 4943,
+      "symbol": "DAI",
+      "name": "Dai",
+      "amount": 4.234351889843576,
+      "chain": "base",
+      "contractAddress": "0x50c5725949a6f0c72e6c4a641f24049a917db0cb"
+    },
+    {
+      "cmcId": 29270,
+      "symbol": "AERO",
+      "name": "Aerodrome Finance",
+      "amount": 3.7826209242,
+      "chain": "base",
+      "contractAddress": "0x940181a94a35a4569e4529a3cdfb74e38fd98631"
+    },
+    {
+      "cmcId": 1027,
+      "symbol": "ETH",
+      "name": "Ethereum",
+      "amount": 3.1287699390066046,
+      "chain": "base",
+      "contractAddress": null
+    },
+    {
+      "cmcId": 2396,
+      "symbol": "WETH",
+      "name": "WETH",
+      "amount": 0.20038128657412108,
+      "chain": "base",
+      "contractAddress": "0x4200000000000000000000000000000000000006"
+    },
+    {
+      "cmcId": 1975,
+      "symbol": "LINK",
+      "name": "Chainlink",
+      "amount": 0.1,
+      "chain": "base",
+      "contractAddress": "0x88fb150bdc53a65fe94dea0c9ba0a6daf8c6e196"
+    },
+    {
+      "cmcId": 24477,
+      "symbol": "AIDOGE",
+      "name": "ArbDoge AI",
+      "amount": 194246624068.01105,
+      "chain": "arbitrum",
+      "contractAddress": "0x09e18590e8f76b6cf471b3cd75fe1a1a9d2b2c2b"
+    },
+    {
+      "cmcId": 825,
+      "symbol": "USDT",
+      "name": "Tether USDt",
+      "amount": 253.338516,
+      "chain": "arbitrum",
+      "contractAddress": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9"
+    },
+    {
+      "cmcId": 3408,
+      "symbol": "USDC",
+      "name": "USDC",
+      "amount": 158.021811,
+      "chain": "arbitrum",
+      "contractAddress": "0xaf88d065e77c8cc2239327c5edb3a432268e5831"
+    },
+    {
+      "cmcId": 11841,
+      "symbol": "ARB",
+      "name": "Arbitrum",
+      "amount": 23.671066717268253,
+      "chain": "arbitrum",
+      "contractAddress": "0x912ce59144191c1204e64559fe8253a0e49e6548"
+    },
+    {
+      "cmcId": 4943,
+      "symbol": "DAI",
+      "name": "Dai",
+      "amount": 21.231768845062525,
+      "chain": "arbitrum",
+      "contractAddress": "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1"
+    },
+    {
+      "cmcId": 27772,
+      "symbol": "PYUSD",
+      "name": "PayPal USD",
+      "amount": 1.843193,
+      "chain": "arbitrum",
+      "contractAddress": "0x46850ad61c2b7d64d08c9c754f45254596696984"
+    },
+    {
+      "cmcId": 1027,
+      "symbol": "ETH",
+      "name": "Ethereum",
+      "amount": 0.15913624471738283,
+      "chain": "arbitrum",
+      "contractAddress": null
+    },
+    {
+      "cmcId": 2396,
+      "symbol": "WETH",
+      "name": "WETH",
+      "amount": 0.016330169236089098,
+      "chain": "arbitrum",
+      "contractAddress": "0x82af49447d8a07e3bd95bd0d56f35241523fbab1"
+    },
+    {
+      "cmcId": 3717,
+      "symbol": "WBTC",
+      "name": "Wrapped Bitcoin",
+      "amount": 0.00109695,
+      "chain": "arbitrum",
+      "contractAddress": "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f"
+    }
+  ],
+  "skippedCount": 23,
+  "chainErrors": [],
+  "cmcCredits": 4
+}
