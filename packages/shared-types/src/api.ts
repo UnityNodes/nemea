@@ -80,6 +80,11 @@ export const WalletImportPreview = z.object({
 });
 export type WalletImportPreview = z.infer<typeof WalletImportPreview>;
 
+export type WalletImportPreviewView = WalletImportPreview & {
+  capacity: number;
+  maxHoldings: number;
+};
+
 export const WalletImportConfirm = z
   .object({
     address: EvmAddress,

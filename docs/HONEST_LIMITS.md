@@ -59,6 +59,7 @@ Data gaps that come from the plan, not from a bug:
 ## Other limits worth knowing
 
 - **Wallet reading uses Blockscout for every chain**, and Etherscan V2 first on Ethereum and Arbitrum when an `ETHERSCAN_API_KEY` is set. Base is paid-only on Etherscan's free tier (checked 2026-09-21), which is why Blockscout is the default. Blockscout lists thousands of airdrop-spam tokens for a busy wallet, so Nemea only sends tokens with a Blockscout price of at least $1 (largest 60 per chain) to CoinMarketCap, then keeps only tokens CoinMarketCap matches by chain and contract address. A real token with no Blockscout price is skipped and counted in an aggregate line. Blockscout's price is used only as a filter, never displayed.
+- **A portfolio holds at most 100 coins**, manual and imported together, because one CoinMarketCap call covers 100 coins per credit. The wallet import lists every matched token with a tick box, orders them from the largest, and ticks as many as fit; the user unticks one to make room for another. Ordering uses Blockscout's price only as a sort key, never shown. Re-importing a wallet replaces its earlier rows, so they do not count against the room.
 - **EOA wallets only** for Sign-In with Ethereum.
 - **Guest accounts are a cookie.** Clear the cookie and the portfolio is unreachable. Sign in with a wallet to keep it.
 - **Single poller.** Run one API instance.

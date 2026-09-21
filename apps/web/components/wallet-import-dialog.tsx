@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { CircleAlert, ShieldCheck, TriangleAlert } from "lucide-react";
-import { CHAINS, CHAIN_LABELS, EvmAddress, type Chain, type WalletImportPreview } from "@nemea/shared-types";
+import { CHAINS, CHAIN_LABELS, EvmAddress, type Chain, type WalletImportItem, type WalletImportPreviewView } from "@nemea/shared-types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -11,14 +11,19 @@ import { errorMessage } from "@/lib/api";
 import { formatAmount, shortAddress } from "@/lib/format";
 import { useWalletConfirm, useWalletPreview } from "@/lib/queries";
 
+function itemKey(item: WalletImportItem): string {
+  return `${item.chain}-${item.cmcId}-${item.contractAddress ?? "native"}`;
+}
+
 function ImportForm({ onDone }: { onDone: () => void }) {
   const preview = useWalletPreview();
   const confirm = useWalletConfirm();
   const [address, setAddress] = useState("");
   const [chains, setChains] = useState<Chain[]>([...CHAINS]);
   const [problem, setProblem] = useState<string | null>(null);
-  const [result, setResult] = useState<WalletImportPreview | null>(null);
+  const [result, setResult] = useState<WalletImportPreviewView | null>(null);
   const [readChains, setReadChains] = useState<Chain[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const toggle = (chain: Chain) => setChains((current) => (current.includes(chain) ? current.filter((c) => c !== chain) : [...current, chain]));
 
@@ -42,14 +47,27 @@ function ImportForm({ onDone }: { onDone: () => void }) {
         onSuccess: (data) => {
           setResult(data);
           setReadChains(chains.filter((c) => !data.chainErrors.some((e) => e.chain === c)));
+          setSelected(new Set(data.items.slice(0, data.capacity).map(itemKey)));
         },
       },
     );
   };
 
-  const importAll = () => {
-    if (!result || readChains.length === 0) return;
-    confirm.mutate({ address: result.address, chains: readChains, items: result.items }, { onSuccess: onDone });
+  const toggleItem = (key: string) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else if (result && next.size < result.capacity) next.add(key);
+      return next;
+    });
+
+  const selectLargest = () => {
+    if (result) setSelected(new Set(result.items.slice(0, result.capacity).map(itemKey)));
+  };
+
+  const importSelected = () => {
+    if (!result || readChains.length === 0 || selected.size === 0) return;
+    confirm.mutate({ address: result.address, chains: readChains, items: result.items.filter((i) => selected.has(itemKey(i))) }, { onSuccess: onDone });
   };
 
   return (
@@ -87,15 +105,15 @@ function ImportForm({ onDone }: { onDone: () => void }) {
           </p>
         ) : null}
         {preview.isError ? <FieldError>{errorMessage(preview.error)}</FieldError> : null}
-        {result ? <PreviewResult result={result} /> : null}
+        {result ? <PreviewResult result={result} selected={selected} onToggle={toggleItem} onSelectLargest={selectLargest} onClear={() => setSelected(new Set())} /> : null}
         {confirm.isError ? <FieldError>{errorMessage(confirm.error)}</FieldError> : null}
       </div>
 
       {result && result.items.length > 0 ? (
         <div className="sticky -bottom-5 z-10 -mx-5 -mb-1 flex flex-col gap-2 border-t border-line bg-surface px-5 pb-4 pt-4">
           <FieldHint>Importing replaces anything you previously imported from this wallet on these networks. Coins you added by hand stay as they are.</FieldHint>
-          <Button onClick={importAll} loading={confirm.isPending}>
-            Import {result.items.length} {result.items.length === 1 ? "holding" : "holdings"}
+          <Button onClick={importSelected} loading={confirm.isPending} disabled={selected.size === 0}>
+            {selected.size === 0 ? "Select at least one coin" : `Import ${selected.size} ${selected.size === 1 ? "holding" : "holdings"}`}
           </Button>
         </div>
       ) : null}
@@ -103,7 +121,17 @@ function ImportForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-function PreviewResult({ result }: { result: WalletImportPreview }) {
+type PreviewProps = {
+  result: WalletImportPreviewView;
+  selected: Set<string>;
+  onToggle: (key: string) => void;
+  onSelectLargest: () => void;
+  onClear: () => void;
+};
+
+function PreviewResult({ result, selected, onToggle, onSelectLargest, onClear }: PreviewProps) {
+  const full = selected.size >= result.capacity;
+  const overflow = result.items.length > result.capacity;
   return (
     <div className="flex flex-col gap-4">
       {result.chainErrors.length > 0 ? (
@@ -128,21 +156,52 @@ function PreviewResult({ result }: { result: WalletImportPreview }) {
           <p className="text-sm font-semibold">
             Found {result.items.length} {result.items.length === 1 ? "holding" : "holdings"} in {shortAddress(result.address)}
           </p>
+          <p className="mt-1 text-sm text-muted" aria-live="polite">
+            {selected.size} selected. Your portfolio has room for {result.capacity} of its {result.maxHoldings} places here.
+          </p>
+          {overflow ? (
+            <p className="mt-2 flex items-start gap-2 rounded-[var(--radius-control)] bg-sunken p-3 text-sm text-muted">
+              <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                There are more coins here than fit, so the {result.capacity} largest are ticked. Untick one to make room for another. The list is ordered from the largest.
+              </span>
+            </p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {overflow ? (
+              <Button type="button" variant="secondary" size="sm" onClick={onSelectLargest}>
+                Tick the largest {result.capacity}
+              </Button>
+            ) : null}
+            <Button type="button" variant="secondary" size="sm" onClick={onClear} disabled={selected.size === 0}>
+              Untick all
+            </Button>
+          </div>
           <ul className="mt-2 divide-y divide-line rounded-[var(--radius-control)] border border-line bg-surface">
-            {result.items.map((item) => (
-              <li key={`${item.chain}-${item.cmcId}-${item.contractAddress ?? "native"}`} className="flex items-center justify-between gap-3 px-3.5 py-3">
-                <span className="min-w-0">
-                  <span className="block font-semibold">{item.symbol}</span>
-                  <span className="block truncate text-xs text-muted">{item.name}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-2.5">
-                  <span className="num text-sm font-medium">{formatAmount(item.amount)}</span>
-                  <Badge tone="info" className="w-[4.75rem] justify-center">
-                    {CHAIN_LABELS[item.chain]}
-                  </Badge>
-                </span>
-              </li>
-            ))}
+            {result.items.map((item) => {
+              const key = itemKey(item);
+              const checked = selected.has(key);
+              const blocked = !checked && full;
+              return (
+                <li key={key}>
+                  <label className={`flex min-h-11 items-center justify-between gap-3 px-3.5 py-3 ${blocked ? "cursor-not-allowed opacity-55" : "cursor-pointer"} has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-ring`}>
+                    <span className="flex min-w-0 items-center gap-3">
+                      <input type="checkbox" checked={checked} disabled={blocked} onChange={() => onToggle(key)} className="size-5 shrink-0 accent-[var(--primary)]" aria-label={`Import ${item.symbol} on ${CHAIN_LABELS[item.chain]}`} />
+                      <span className="min-w-0">
+                        <span className="block font-semibold">{item.symbol}</span>
+                        <span className="block truncate text-xs text-muted">{item.name}</span>
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-2.5">
+                      <span className="num text-sm font-medium">{formatAmount(item.amount)}</span>
+                      <Badge tone="info" className="w-[4.75rem] justify-center">
+                        {CHAIN_LABELS[item.chain]}
+                      </Badge>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : (

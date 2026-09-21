@@ -25,8 +25,16 @@ export function toHolding(r: HoldingRow): Holding {
 }
 
 export class HoldingLimitError extends Error {
-  constructor(readonly max: number) {
-    super(`A portfolio can hold at most ${max} coins`);
+  constructor(
+    readonly max: number,
+    readonly room: number = 0,
+    readonly requested: number = 1,
+  ) {
+    super(
+      room > 0 && requested > room
+        ? `Your portfolio holds at most ${max} coins and has room for ${room} more here. You selected ${requested}. Unselect ${requested - room} and try again.`
+        : `A portfolio can hold at most ${max} coins`,
+    );
   }
 }
 
@@ -131,7 +139,8 @@ export class Repo {
         .delete(holdings)
         .where(and(eq(holdings.userId, userId), eq(holdings.source, "wallet"), eq(holdings.walletAddress, walletAddress.toLowerCase()), inArray(holdings.chain, [...chains])));
       const [count] = await tx.select({ n: sql<number>`count(*)::int` }).from(holdings).where(eq(holdings.userId, userId));
-      if ((count?.n ?? 0) + items.length > maxHoldings) throw new HoldingLimitError(maxHoldings);
+      const room = Math.max(0, maxHoldings - (count?.n ?? 0));
+      if (items.length > room) throw new HoldingLimitError(maxHoldings, room, items.length);
       for (const h of items) {
         await tx.insert(holdings).values({ id: randomUUID(), userId, cmcId: h.cmcId, symbol: h.symbol, name: h.name, amount: h.amount, costBasisUsd: null, source: "wallet", chain: h.chain, contractAddress: h.contractAddress, walletAddress: walletAddress.toLowerCase(), createdAt: this.now() });
       }

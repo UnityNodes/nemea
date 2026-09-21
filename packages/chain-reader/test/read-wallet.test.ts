@@ -191,8 +191,8 @@ describe("readWallet CoinMarketCap matching", () => {
     const { cmc } = fakeCmc([meta(3408, "USDC", "USD Coin", [{ chain: "ethereum", address: USDC_ETH }])]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
     expect(preview.items).toEqual([
-      { cmcId: 3408, symbol: "USDC", name: "USD Coin", amount: 250, chain: "ethereum", contractAddress: USDC_ETH },
       { cmcId: 1027, symbol: "ETH", name: "Ethereum", amount: 3, chain: "ethereum", contractAddress: null },
+      { cmcId: 3408, symbol: "USDC", name: "USD Coin", amount: 250, chain: "ethereum", contractAddress: USDC_ETH },
     ]);
     expect(preview.skipped).toEqual([]);
   });
@@ -276,15 +276,32 @@ describe("readWallet CoinMarketCap matching", () => {
     expect(calls).toEqual([]);
   });
 
-  it("sorts items by chain order, then by amount descending", async () => {
+  it("puts native ETH first, then the rest by chain order and amount when no value hint exists", async () => {
     const p = fakeProvider("p", (_a, chain) => [raw(chain, null, "ETH", 1), raw(chain, SHARED, "A", 50), raw(chain, SPAM, "B", 5)]);
     const { cmc } = fakeCmc([meta(10, "A", "A coin", ALL_CHAINS.map((c) => ({ chain: c, address: SHARED }))), meta(20, "B", "B coin", ALL_CHAINS.map((c) => ({ chain: c, address: SPAM })))]);
     const preview = await readWallet({ address: VITALIK, chains: ["arbitrum", "base", "ethereum"], providers: all([p]), cmc });
     expect(preview.items.map((i) => `${i.chain}:${i.symbol}:${i.amount}`)).toEqual([
-      "ethereum:A:50", "ethereum:B:5", "ethereum:ETH:1",
-      "base:A:50", "base:B:5", "base:ETH:1",
-      "arbitrum:A:50", "arbitrum:B:5", "arbitrum:ETH:1",
+      "ethereum:ETH:1", "base:ETH:1", "arbitrum:ETH:1",
+      "ethereum:A:50", "ethereum:B:5",
+      "base:A:50", "base:B:5",
+      "arbitrum:A:50", "arbitrum:B:5",
     ]);
+  });
+
+  it("orders tokens across all chains by their worth, largest first, so a size limit can keep the biggest", async () => {
+    const p = fakeProvider(
+      "hinted",
+      (_a, chain) => {
+        if (chain === "ethereum") return [raw(chain, addr(1), "SMALL", 10, { usdRateHint: 1 }), raw(chain, addr(2), "MID", 10, { usdRateHint: 5 })];
+        if (chain === "arbitrum") return [raw(chain, addr(3), "BIG", 10, { usdRateHint: 100 })];
+        return [];
+      },
+      true,
+    );
+    const { cmc } = fakeCmc([meta(1, "SMALL", "Small", [{ chain: "ethereum", address: addr(1) }]), meta(2, "MID", "Mid", [{ chain: "ethereum", address: addr(2) }]), meta(3, "BIG", "Big", [{ chain: "arbitrum", address: addr(3) }])]);
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum", "base", "arbitrum"], providers: all([p]), cmc });
+    expect(preview.items.map((i) => i.symbol)).toEqual(["BIG", "MID", "SMALL"]);
+    expect(JSON.stringify(preview)).not.toMatch(/usdRateHint|hintValue/);
   });
 
   it("rethrows a CMC failure instead of pretending nothing matched", async () => {

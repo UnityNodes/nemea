@@ -1,13 +1,12 @@
 import { Router } from "express";
 import { tierHoldings, priceRows, totalValue, portfolioChange24h } from "@nemea/alerts";
-import { AlertPreferences, HoldingInput, PreferencesUpdate, WalletImportConfirm, WalletImportRequest, type PortfolioView, type PricedHoldingView, type TokenLookupCandidate } from "@nemea/shared-types";
+import { AlertPreferences, HoldingInput, MAX_HOLDINGS, PreferencesUpdate, WalletImportConfirm, WalletImportRequest, type PortfolioView, type PricedHoldingView, type TokenLookupCandidate, type WalletImportPreviewView } from "@nemea/shared-types";
 import { z } from "zod";
 import { limiter, requireUser, type AppDeps, type AuthedRequest } from "../app.ts";
 import { SAMPLE_PORTFOLIO } from "../config.ts";
 import { HttpError, parseBody } from "../http.ts";
 import { HoldingLimitError, type UserRow } from "../services/repo.ts";
 
-const MAX_HOLDINGS = 100;
 
 export async function portfolioView(deps: AppDeps, user: UserRow, refresh: boolean): Promise<PortfolioView> {
   const holdings = await deps.repo.holdingsOf(user.id);
@@ -152,14 +151,20 @@ export function portfolioRoutes(deps: AppDeps): Router {
   });
 
   r.post("/portfolio/import-wallet/preview", auth, walletLimit, walletGlobal, async (req, res) => {
+    const user = (req as AuthedRequest).user;
     const { address, chains } = parseBody(WalletImportRequest, req.body);
-    res.json(await deps.walletReader(address, [...new Set(chains)]));
+    const preview = await deps.walletReader(address, [...new Set(chains)]);
+    const readOk = new Set(chains.filter((c) => !preview.chainErrors.some((e) => e.chain === c)));
+    const existing = await deps.repo.holdingsOf(user.id);
+    const kept = existing.filter((h) => !(h.source === "wallet" && h.walletAddress === address.toLowerCase() && h.chain !== null && readOk.has(h.chain))).length;
+    const view: WalletImportPreviewView = { ...preview, capacity: Math.max(0, MAX_HOLDINGS - kept), maxHoldings: MAX_HOLDINGS };
+    res.json(view);
   });
 
   r.post("/portfolio/import-wallet/confirm", auth, walletLimit, metaGlobal, async (req, res) => {
     const user = (req as AuthedRequest).user;
     const { address, items, chains: requestedChains } = parseBody(WalletImportConfirm, req.body);
-    if (items.length > MAX_HOLDINGS) throw new HttpError(400, "too_many_holdings", `At most ${MAX_HOLDINGS} coins can be imported at once`);
+    if (items.length > MAX_HOLDINGS) throw new HttpError(400, "too_many_holdings", `You selected ${items.length} coins. A portfolio holds at most ${MAX_HOLDINGS}. Unselect ${items.length - MAX_HOLDINGS} and try again.`);
     const ids = [...new Set(items.map((i) => i.cmcId))];
     const metas = await deps.market.ensureMeta(ids);
     const unknown = ids.filter((id) => !metas.has(id));

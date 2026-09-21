@@ -99,6 +99,7 @@ export async function readWallet(opts: ReadWalletOptions): Promise<WalletImportP
     chainErrors: outcomes.flatMap((o) => (o.error === null ? [] : [{ chain: o.chain, message: o.error }])),
   };
 
+  const importance = new WeakMap<object, number>();
   const tokens: Candidate[] = [];
   const seen = new Set<string>();
   for (const outcome of outcomes) {
@@ -106,7 +107,9 @@ export async function readWallet(opts: ReadWalletOptions): Promise<WalletImportP
     for (const balance of outcome.balances) {
       if (!(balance.amount > 0)) continue;
       if (balance.contractAddress === null) {
-        preview.items.push({ cmcId: NATIVE_CMC_ID, symbol: NATIVE_SYMBOL, name: NATIVE_NAME, amount: balance.amount, chain: outcome.chain, contractAddress: null });
+        const nativeItem = { cmcId: NATIVE_CMC_ID, symbol: NATIVE_SYMBOL, name: NATIVE_NAME, amount: balance.amount, chain: outcome.chain, contractAddress: null };
+        importance.set(nativeItem, Number.POSITIVE_INFINITY);
+        preview.items.push(nativeItem);
         continue;
       }
       const contract = balance.contractAddress.toLowerCase();
@@ -133,7 +136,9 @@ export async function readWallet(opts: ReadWalletOptions): Promise<WalletImportP
     for (const { chain, balance, contract } of lookable) {
       const meta = index.get(contractKey(chain, contract));
       if (meta) {
-        preview.items.push({ cmcId: meta.cmcId, symbol: meta.symbol, name: meta.name, amount: balance.amount, chain, contractAddress: contract });
+        const item = { cmcId: meta.cmcId, symbol: meta.symbol, name: meta.name, amount: balance.amount, chain, contractAddress: contract };
+        importance.set(item, typeof balance.usdRateHint === "number" ? balance.amount * balance.usdRateHint : 0);
+        preview.items.push(item);
       } else {
         const note = balance.looksLikeSpam ? ` (${balance.provider} does not vouch for this token)` : "";
         preview.skipped.push({ chain, contractAddress: contract, symbol: balance.symbol, reason: `${UNLISTED_REASON}${note}` });
@@ -141,6 +146,12 @@ export async function readWallet(opts: ReadWalletOptions): Promise<WalletImportP
     }
   }
 
-  preview.items.sort((a, b) => CHAINS.indexOf(a.chain) - CHAINS.indexOf(b.chain) || b.amount - a.amount);
+  const weight = (item: object) => importance.get(item) ?? 0;
+  preview.items.sort((a, b) => {
+    const wa = weight(a);
+    const wb = weight(b);
+    if (wa !== wb) return wb > wa ? 1 : -1;
+    return CHAINS.indexOf(a.chain) - CHAINS.indexOf(b.chain) || b.amount - a.amount;
+  });
   return preview;
 }

@@ -15,7 +15,7 @@ import type {
   TelegramLinkCode,
   TokenLookupCandidate,
   WalletImportItem,
-  WalletImportPreview,
+  WalletImportPreviewView,
 } from "@nemea/shared-types";
 import { api, ApiClientError } from "./api.ts";
 import { writeSessionHint } from "./session-hint.ts";
@@ -214,7 +214,7 @@ export function useLoadSample() {
 
 export function useWalletPreview() {
   return useMutation({
-    mutationFn: (body: { address: string; chains: Chain[] }) => api<WalletImportPreview>("/portfolio/import-wallet/preview", { method: "POST", body }),
+    mutationFn: (body: { address: string; chains: Chain[] }) => api<WalletImportPreviewView>("/portfolio/import-wallet/preview", { method: "POST", body }),
   });
 }
 

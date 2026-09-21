@@ -35,3 +35,5 @@ export const HoldingTier = z.enum(["top", "small"]);
 export type HoldingTier = z.infer<typeof HoldingTier>;
 
 export const TOP_HOLDING_SHARE = 0.8;
+
+export const MAX_HOLDINGS = 100;

@@ -553,6 +553,59 @@ describe("review hardening", () => {
     expect((await c.request("POST", "/portfolio/import-wallet/confirm", { address, items: [] })).status).toBe(400);
   });
 
+  it("tells the wallet dialog how many places are left, refuses too many cleanly, and counts a re-import as replacing", async () => {
+    await h.close();
+    const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+    const found = [
+      { cmcId: ETH, symbol: "ETH", name: "Ethereum", amount: 1, chain: "ethereum", contractAddress: null },
+      { cmcId: ETH, symbol: "ETH", name: "Ethereum", amount: 2, chain: "base", contractAddress: null },
+      { cmcId: ETH, symbol: "ETH", name: "Ethereum", amount: 3, chain: "arbitrum", contractAddress: null },
+      { cmcId: USDC, symbol: "USDC", name: "USDC", amount: 10, chain: "ethereum", contractAddress: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" },
+      { cmcId: USDC, symbol: "USDC", name: "USDC", amount: 20, chain: "base", contractAddress: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913" },
+      { cmcId: USDC, symbol: "USDC", name: "USDC", amount: 30, chain: "arbitrum", contractAddress: "0xaf88d065e77c8cc2239327c5edb3a432268e5831" },
+    ];
+    h = await startHarness({ walletReader: async (a) => ({ address: a, items: found, skipped: [], chainErrors: [] }) });
+    const c = await guest(h);
+    const me = (await c.request("GET", "/me")).body.user;
+    for (let i = 0; i < 97; i++) {
+      await h.composed.deps.repo.addHolding(me.id, { cmcId: 2000 + i, symbol: `T${i}`, name: `T${i}`, amount: 1, costBasisUsd: null, source: "manual", chain: null, contractAddress: null, walletAddress: null }, 1000);
+    }
+    const chains = ["ethereum", "base", "arbitrum"];
+    const preview = (await c.request("POST", "/portfolio/import-wallet/preview", { address, chains })).body;
+    expect(preview.capacity).toBe(3);
+    expect(preview.maxHoldings).toBe(100);
+    expect(preview.items).toHaveLength(6);
+
+    const tooMany = await c.request("POST", "/portfolio/import-wallet/confirm", { address, chains, items: found });
+    expect(tooMany.status).toBe(400);
+    expect(tooMany.body.error.code).toBe("too_many_holdings");
+    expect(tooMany.body.error.message).toContain("room for 3");
+    expect(tooMany.body.error.message).toContain("Unselect 3");
+    expect(await h.composed.deps.repo.countHoldings(me.id)).toBe(97);
+
+    const ok = await c.request("POST", "/portfolio/import-wallet/confirm", { address, chains, items: found.slice(0, 3) });
+    expect(ok.status).toBe(201);
+    expect(await h.composed.deps.repo.countHoldings(me.id)).toBe(100);
+    const again = (await c.request("POST", "/portfolio/import-wallet/preview", { address, chains })).body;
+    expect(again.capacity).toBe(3);
+    const swapped = await c.request("POST", "/portfolio/import-wallet/confirm", { address, chains, items: found.slice(3, 6) });
+    expect(swapped.status).toBe(201);
+    expect(await h.composed.deps.repo.countHoldings(me.id)).toBe(100);
+    const symbols = (await c.request("GET", "/portfolio")).body.holdings.filter((x: any) => x.source === "wallet").map((x: any) => x.symbol);
+    expect(symbols).toEqual(["USDC", "USDC", "USDC"]);
+  });
+
+  it("does not count holdings on a chain that failed to read as replaceable", async () => {
+    await h.close();
+    const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+    h = await startHarness({ walletReader: async (a) => ({ address: a, items: [], skipped: [], chainErrors: [{ chain: "base", message: "blockscout: timeout" }] }) });
+    const c = await guest(h);
+    const me = (await c.request("GET", "/me")).body.user;
+    await h.composed.deps.repo.replaceWalletHoldings(me.id, address, ["base"], [{ cmcId: ETH, symbol: "ETH", name: "Ethereum", amount: 1, costBasisUsd: null, source: "wallet", chain: "base", contractAddress: null, walletAddress: address.toLowerCase() }]);
+    const preview = (await c.request("POST", "/portfolio/import-wallet/preview", { address, chains: ["base"] })).body;
+    expect(preview.capacity).toBe(99);
+  });
+
   it("survives a malformed cookie and an empty patch", async () => {
     const c = h.client();
     const r = await c.request("POST", "/auth/guest", undefined, { cookie: "nemea_session=%" });
