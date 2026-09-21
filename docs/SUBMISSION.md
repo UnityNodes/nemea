@@ -13,11 +13,16 @@ What the code cannot do for you. Sponsor requirements are from CoinMarketCap's h
 | 4 | Deploy | Done 2026-09-21 on the Unity Nodes server: https://nemea.unitynodes.com (see `docs/DEPLOY.md`). Still to check: keep the CMC key valid through 16 October, and add an off-box copy of the database backups. |
 | 5 | Screenshots | With the deployed stack on real data: `CONFIRM_REAL_DATA=1 BASE_URL=<url> node apps/web/scripts/screenshots.mjs`, commit `docs/screenshots/`. |
 | 6 | README | Fill the two `TODO(owner)` lines: live demo URL and demo account note. |
-| 7 | Track | Pick one of: Markets and Trading Tools, AI Agents and Automation, Data and Visualisation, Real World Assets. Nemea has no AI agent, so the first or third fits best. |
+| 7 | Track | Pick one of: Markets and Trading Tools, AI Agents and Automation, Data and Visualisation, Real World Assets. The page describes the first as "screeners, alert bots, scanners, portfolio and PnL trackers", which is what Nemea is. Read the weightings on the Tracks tab first; they are not in the text this repo was checked against. |
 | 8 | Endpoints named | Already listed in the README. Keep the list identical to what `/status` shows. |
-| 9 | Visible real API call | The demo video should show `/status` with the live CoinMarketCap call log. |
+| 9 | Visible real API call: code and response | Done in the README ("One real call, code and response"), backed by `docs/evidence/gate-a-sample-call.json`. The demo video should also show `/status` with the live CoinMarketCap call log. |
 | 10 | "Where CMC got in the way" | The README section is written from real friction met during the build. Add anything you hit with your own key. |
-| 11 | X post | Post with `#BuildwithCMC`. |
+| 11 | X post | Required text: a link to the DoraHacks submission, the demo video and `#BuildwithCMC`. Post it last, after the submission page and the video exist. |
 | 12 | Video (3 min) | Set up portfolio, trigger an alert with "Try an alert", Explain like I'm 5, Level 2 protective action, pitch. |
 | 13 | Pitch numbers | The line "27 projects on this hackathon are built for traders, devs, or institutions" is not in this repo's evidence. Count the field yourself before saying it. |
 | 14 | Licence | MIT, already in `LICENSE`. |
+| 15 | Startup tier for the event | The sponsor upgrades the same key to Startup only after registering on DoraHacks with the email of the CoinMarketCap account. On 2026-09-21 `/status` still reports Basic (15,000 credits/month), so this is not applied yet. After it is: `pnpm gate:a` again (the evidence files update) and `sudo systemctl restart nemea-api` so the cadence is planned from the new limits. |
+| 16 | Judging runs on Basic | Event access ends when submissions close (30 Sep 23:59 UTC) and the key reverts to Basic; judging is 1 to 16 October. The planner already handles that: it reads the plan and stretches the cadence, and `/status` says so. Do not promise one-minute checks in the video or the post. |
+| 17 | Public repository | Required, and nothing is pushed yet. Needs an explicit "push" from the owner; check that `UnityNodes/nemea` exists and is public, then push without force. |
+| 18 | No key in the repo | Checked 2026-09-21: full history scanned for key, token and private-key patterns, nothing found; only `.env.example` is tracked. Rerun before pushing. |
+| 19 | API feedback | The sponsor reads it. The README friction list is the feedback; also post it in the hackathon's public Q&A tab. |

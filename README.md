@@ -74,6 +74,56 @@ Alert fatigue is a design constraint: at most 3 non-critical alerts a week (you 
 
 The `/status` page lists the last real calls with time, endpoint, HTTP status, credits and latency.
 
+### One real call, code and response
+
+Every number in Nemea comes from calls like this one, sent by `packages/cmc-client/src/client.ts`. Captured by `pnpm gate:a` on 2026-09-21 with a Basic key (the key is redacted in the file). Bitcoin, Ethereum and USDC in one request cost 1 credit.
+
+```bash
+curl -s "https://pro-api.coinmarketcap.com/v3/cryptocurrency/quotes/latest?id=1,1027,3408&convert=USD" \
+  -H "X-CMC_PRO_API_KEY: $CMC_API_KEY"
+```
+
+```ts
+const client = new CmcClient({ apiKey: process.env.CMC_API_KEY });
+const { quotes, missing } = await client.getQuotes([1, 1027, 3408]);
+```
+
+The response, trimmed to Bitcoin and to the fields Nemea reads (the full body with all three coins is in [`docs/evidence/gate-a-sample-call.json`](docs/evidence/gate-a-sample-call.json), the receipts of all 10 calls of the run in [`docs/evidence/gate-a-cmc.json`](docs/evidence/gate-a-cmc.json)):
+
+```json
+{
+  "status": {
+    "timestamp": "2026-09-21T17:36:24.903Z",
+    "error_code": "0",
+    "error_message": "",
+    "elapsed": 4,
+    "credit_count": 1
+  },
+  "data": [
+    {
+      "id": 1,
+      "name": "Bitcoin",
+      "symbol": "BTC",
+      "cmc_rank": 1,
+      "last_updated": "2026-09-21T17:35:00.000Z",
+      "quote": [
+        {
+          "symbol": "USD",
+          "price": 85884.0831679611,
+          "volume_24h": 51534296437.904594,
+          "volume_change_24h": 142.2458,
+          "percent_change_1h": 0.17164259,
+          "percent_change_24h": 5.68945324,
+          "percent_change_7d": 9.03108265,
+          "market_cap": 1725200471304.2444,
+          "last_updated": "2026-09-21T17:35:00.000Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## Screenshots
 
 TODO(owner): captured from a stack on real CoinMarketCap data with `CONFIRM_REAL_DATA=1 BASE_URL=<url> node apps/web/scripts/screenshots.mjs`. Dashboard, Telegram alert, Explain like I'm 5.
@@ -84,6 +134,14 @@ TODO(owner): captured from a stack on real CoinMarketCap data with `CONFIRM_REAL
 - **...a portfolio tracker?** A tracker shows you what you have. Nemea is silent until something matters and then explains it.
 - **...a trading bot or signal service?** They add risk and demand attention. Nemea never trades, never predicts, and never touches your funds.
 - **...checking the app more often?** Nemea is for the moments you are offline.
+
+## What CoinMarketCap made possible
+
+- **Watching a whole portfolio for a few credits.** `quotes/latest` takes 100 coins per call and returns price, 1 h / 24 h / 7 d / 30 d change and volume change together, so a portfolio check is one credit, not one per coin.
+- **Peg and volume rules without a market feed of our own.** Stablecoin price and `volume_change_24h` from the same call are enough for the depeg and volume-anomaly alerts.
+- **Context for a move.** The categories endpoint has a live 24 h average per category (360 of 360 had one on 2026-09-21; Ethereum mapped to Smart Contracts at +4.4%), which is what lets an alert say "the whole category moved" instead of a bare number.
+- **Wallet import that matches the right token.** `info` returns a contract address per chain, so a token found in a wallet is matched by exact chain and address, not by a ticker that anyone can copy.
+- **A polling budget that is computed.** `/v1/key/info` returns the plan limits, so the cadence is planned from the real credits and the `/status` page shows it.
 
 ## Where CoinMarketCap got in the way
 
@@ -127,15 +185,15 @@ Status on 2026-09-21. "Not run" means exactly that.
 
 | Claim | How it is checked | Status |
 |---|---|---|
-| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 508 tests pass |
+| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 527 tests pass |
 | Types | `pnpm typecheck` | passes in every package |
-| No key handling in source | `pnpm check:claims` | passes (132 source files) |
+| No key handling in source | `pnpm check:claims` | passes (135 source files) |
 | Fresh clone to first alert | clone, install, start, walk (see above) | verified |
 | UI at 1280 px and 390 px | Playwright walk of the whole journey against the dev stack | verified on development data |
 | Blockscout wallet read on Ethereum, Base, Arbitrum | live run on a public wallet | verified |
 | Etherscan V2 free tier covers Ethereum and Arbitrum, not Base | live probe | verified |
 | CoinMarketCap response shapes and error codes | CoinMarketCap docs and keyless live responses, captured fixtures in tests | verified against docs and keyless responses |
-| Real CoinMarketCap calls with an API key | `pnpm gate:a` | **passed 2026-09-21** on a Basic key (15,000 credits/month, 50 requests/minute): 10 real calls, 11 credits, evidence in `docs/evidence/gate-a-cmc.json` |
+| Real CoinMarketCap calls with an API key | `pnpm gate:a` | **passed 2026-09-21** on a Basic key (15,000 credits/month, 50 requests/minute): 10 real calls, 11 credits, receipts in `docs/evidence/gate-a-cmc.json`, raw request and response in `docs/evidence/gate-a-sample-call.json` |
 | Telegram delivery | `pnpm gate:c` | **passed 2026-09-21** with a real bot: token accepted, test message accepted by Telegram (message id returned) and confirmed on the owner's phone, and an over-limit message is rejected as expected. No evidence file is committed because it would contain a chat id. The link-code flow between the web app and the bot is covered by tests, not yet exercised end to end against the real bot |
 | Wallet import matched against real CoinMarketCap | `pnpm gate:b` | **passed 2026-09-21** on a public wallet: 78 tokens matched by chain and contract address across Ethereum, Base and Arbitrum, native ETH on all three, unmatched tokens skipped with a reason, evidence in `docs/evidence/gate-b-wallet.json` |
 | Email and browser push | tests with stubs | **not verified** against Resend or a real push service |

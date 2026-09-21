@@ -59,6 +59,18 @@ const core = await step("quotes for BTC, ETH, USDC", async () => {
   return { value: quotes, detail: `${rows.join(" | ")}${missing.length ? ` | MISSING ${missing.join(",")}` : ""}`, ok: symbolsOk && pricesOk && missing.length === 0 };
 });
 
+let sampleCall: unknown = null;
+await step("raw request and response of one real call (kept as evidence)", async () => {
+  const base = process.env.CMC_BASE_URL?.trim() || "https://pro-api.coinmarketcap.com";
+  const url = `${base}/v3/cryptocurrency/quotes/latest?id=1,1027,3408&convert=USD`;
+  const official = new URL(url).host === "pro-api.coinmarketcap.com";
+  const res = await fetch(url, { headers: { "X-CMC_PRO_API_KEY": CMC_API_KEY, Accept: "application/json" }, signal: AbortSignal.timeout(20000) });
+  const body = (await res.json()) as { status?: { credit_count?: number }; data?: unknown };
+  const coins = Array.isArray(body.data) ? body.data.length : 0;
+  sampleCall = { capturedAt: new Date().toISOString(), request: { method: "GET", url, headers: { "X-CMC_PRO_API_KEY": "<redacted>" } }, response: { httpStatus: res.status, body } };
+  return { value: sampleCall, detail: `${official ? "official host" : "NOT the official host"}, HTTP ${res.status}, credit_count ${body.status?.credit_count ?? "n/a"}, coins ${coins}`, ok: official && res.ok && coins === 3 };
+});
+
 await step("watched stablecoin ids resolve to the expected symbols", async () => {
   const { quotes, missing } = await client.getQuotes(WATCHED_STABLES.map(([id]) => id));
   const wrong = WATCHED_STABLES.filter(([id, symbol]) => quotes.find((q) => q.cmcId === id)?.symbol.toUpperCase() !== symbol).map(([id, s]) => `${id}!=${s}`);
@@ -159,6 +171,7 @@ if (clean) {
     "docs/evidence/gate-a-cmc.json",
     JSON.stringify({ ranAt: new Date().toISOString(), plan: keyInfo, stats: client.stats().counters, receipts }, null, 2) + "\n",
   );
+  writeFileSync("docs/evidence/gate-a-sample-call.json", JSON.stringify(sampleCall, null, 2) + "\n");
   console.log(`\nwrote docs/evidence/gate-a-cmc.json (${receipts.length} real API calls, credits spent this run: ${client.stats().counters.creditsSpent})`);
 } else {
   console.log("\nno evidence file written: a failing run is not evidence");
