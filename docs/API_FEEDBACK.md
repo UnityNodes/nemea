@@ -1,0 +1,14 @@
+# Feedback for the CoinMarketCap API team
+
+From building Nemea (Markets and Trading Tools) on a Basic key, 21 September 2026. Every item was hit against the live API; the receipts are in `docs/evidence/`.
+
+1. **Historical depth depends on the interval, and the error does not say so.** `v3/cryptocurrency/quotes/historical` with `interval=hourly` for a range older than a month returns HTTP 400 "Your plan allows 1 months of historical access". The same range with `interval=daily` returns 200 (checked for 7 to 13 October 2025 on Basic, 1 credit per coin). Either the plan table or the message should say that daily data goes further back.
+2. **`price-performance-stats` is not in the Basic column of the pricing matrix, but it is a natural fit for a free plan.** All-time low and high are the first thing a "how far from the bottom" alert wants. Basic gets HTTP 403 "Your API Key subscription plan doesn't support this endpoint". Nemea falls back to a labelled 365-day low from daily history.
+3. **`v2/cryptocurrency/info` by contract address fails the whole call.** One unknown address in a batch gives HTTP 500 even with `skip_invalid=true`, and checksum-cased addresses give 400 or 500 (lowercase works). Wallet tokens are therefore matched through `info?symbol=` and then by `contract_address[]`.
+4. **`info` by address can return another chain's `platform.token_address`.** Matching on `platform` is wrong for a multi-chain token; matching on the `contract_address[]` list by (chain, address) is right. The docs do not say which field is authoritative.
+5. **A `quotes/latest` request whose ids are all invalid is HTTP 400** ("No data found", `credit_count` 0), while a mixed request silently drops the invalid ids. A partial answer and an error for the same mistake makes retry logic guess.
+6. **`status.error_code` is a string on some endpoints and a number on others.** Every client needs to normalise it.
+7. **Tags are not ordered by relevance.** Bitcoin's first tag that matches a category is "Coinbase Ventures Portfolio" and Chainlink's is "Cosmos Ecosystem". About 65 of 359 categories are investor, regulatory or estate buckets. `tag-groups` helps, but a "primary category" field would remove a heuristic every consumer has to write.
+8. **Category `last_updated` is a metadata date, not a freshness time.** 348 of 359 were older than 30 days while the averages were live. A freshness timestamp for the averages would let clients tell stale from live.
+9. **No liquidity or order-book depth in the basic data.** "Sudden liquidity drop" has to be approximated by a volume dry-up, and Nemea says so.
+10. **The one-minute peg check does not fit the free plan.** 15,000 credits a month against about 43,200 minute-polls. `/v1/key/info` made it possible to plan the cadence from the real limits, which is the part that worked well.
