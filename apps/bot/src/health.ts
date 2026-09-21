@@ -1,5 +1,6 @@
 import { createServer, type Server } from "node:http";
 import { GrammyError } from "grammy";
+import { describeError } from "./redact.ts";
 
 export type HealthBody = {
   ok: boolean;
@@ -42,24 +43,22 @@ export function createHealthServer(state: HealthState): Server {
   });
 }
 
-export function describeStartFailure(error: unknown): string {
+export function describeStartFailure(error: unknown, token: string): string {
   if (error instanceof GrammyError && error.method === "getMe" && (error.error_code === 404 || error.error_code === 401)) {
     return `TELEGRAM_BOT_TOKEN rejected by Telegram (${error.error_code} on getMe) — check the token from @BotFather`;
   }
-  const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-  return `bot is not running: ${detail}`;
+  return `bot is not running: ${describeError(error, token)}`;
 }
 
 export type StartFn = (onStart: () => void) => Promise<void>;
 
-export async function superviseBot(start: StartFn, state: HealthState): Promise<void> {
+export async function superviseBot(start: StartFn, state: HealthState, token: string): Promise<void> {
   try {
     await start(() => state.markRunning());
     state.markNotRunning("bot stopped");
   } catch (error) {
-    const reason = describeStartFailure(error);
+    const reason = describeStartFailure(error, token);
     console.error(`[bot] ${reason}`);
-    if (!(error instanceof GrammyError)) console.error(error);
     state.markNotRunning(reason);
   }
 }

@@ -107,6 +107,8 @@ describe("message builders", () => {
 });
 
 const TWELVE = "abandon ability able about above absent absorb abstract absurd abuse access accident";
+const WORDS = TWELVE.split(" ");
+const HEX_KEY = "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318";
 
 describe("looksLikeSeedPhrase", () => {
   it("flags twelve lowercase 3-8 letter words", () => {
@@ -121,29 +123,84 @@ describe("looksLikeSeedPhrase", () => {
 
   it("flags a phrase pasted after a command", () => {
     expect(looksLikeSeedPhrase(`/start ${TWELVE}`)).toBe(true);
+    expect(looksLikeSeedPhrase(`/start@nemea_bot ${TWELVE}`)).toBe(true);
+  });
+
+  it("flags a capitalised first word and mixed case", () => {
+    expect(looksLikeSeedPhrase(`Abandon ${WORDS.slice(1).join(" ")}`)).toBe(true);
+    expect(looksLikeSeedPhrase(TWELVE.toUpperCase())).toBe(true);
+    expect(looksLikeSeedPhrase(WORDS.map((w, i) => (i % 2 === 0 ? w.toUpperCase() : w)).join(" "))).toBe(true);
+  });
+
+  it("flags comma, semicolon and hyphen separated phrases", () => {
+    expect(looksLikeSeedPhrase(WORDS.join(", "))).toBe(true);
+    expect(looksLikeSeedPhrase(WORDS.join(";"))).toBe(true);
+    expect(looksLikeSeedPhrase(WORDS.join(" - "))).toBe(true);
+  });
+
+  it("flags numbered lists in every common style", () => {
+    expect(looksLikeSeedPhrase(WORDS.map((w, i) => `${i + 1}. ${w}`).join("\n"))).toBe(true);
+    expect(looksLikeSeedPhrase(WORDS.map((w, i) => `${i + 1}) ${w}`).join(" "))).toBe(true);
+    expect(looksLikeSeedPhrase(WORDS.map((w, i) => `${i + 1}: ${w}`).join("\n"))).toBe(true);
+    expect(looksLikeSeedPhrase(WORDS.map((w, i) => `${i + 1} ${w}`).join("\n"))).toBe(true);
+  });
+
+  it("flags 15, 18 and 21 word phrases", () => {
+    for (const count of [15, 18, 21]) {
+      const words = Array.from({ length: count }, (_, i) => WORDS[i % WORDS.length]);
+      expect(looksLikeSeedPhrase(words.join(" "))).toBe(true);
+    }
+  });
+
+  it("flags a 64-hex private key with and without 0x, also after a command", () => {
+    expect(looksLikeSeedPhrase(HEX_KEY)).toBe(true);
+    expect(looksLikeSeedPhrase(`0x${HEX_KEY}`)).toBe(true);
+    expect(looksLikeSeedPhrase(`  0x${HEX_KEY.toUpperCase()}\n`)).toBe(true);
+    expect(looksLikeSeedPhrase(`/start ${HEX_KEY}`)).toBe(true);
+  });
+
+  it("does not flag hex strings of other lengths or with other characters", () => {
+    expect(looksLikeSeedPhrase(HEX_KEY.slice(1))).toBe(false);
+    expect(looksLikeSeedPhrase(`${HEX_KEY}0`)).toBe(false);
+    expect(looksLikeSeedPhrase(`g${HEX_KEY.slice(1)}`)).toBe(false);
+    expect(looksLikeSeedPhrase("0xabc123")).toBe(false);
   });
 
   it("does not flag eleven words", () => {
-    expect(looksLikeSeedPhrase(TWELVE.split(" ").slice(0, 11).join(" "))).toBe(false);
+    expect(looksLikeSeedPhrase(WORDS.slice(0, 11).join(" "))).toBe(false);
   });
 
-  it("does not flag a normal sentence with capitals and punctuation", () => {
+  it("does not flag when any word is outside 3-8 letters", () => {
+    expect(looksLikeSeedPhrase([...WORDS.slice(0, 11), "ab"].join(" "))).toBe(false);
+    expect(looksLikeSeedPhrase([...WORDS.slice(0, 11), "abcdefghi"].join(" "))).toBe(false);
+  });
+
+  it("negative control: ordinary prose with short and long words is not flagged", () => {
     expect(
       looksLikeSeedPhrase("Hello, my name is Alice and I would like to know about my portfolio today."),
     ).toBe(false);
+    expect(
+      looksLikeSeedPhrase(
+        "Can you please explain why my portfolio value changed yesterday afternoon compared with Monday morning?",
+      ),
+    ).toBe(false);
+    expect(
+      looksLikeSeedPhrase(
+        "Please explain exactly which alerts triggered yesterday because dashboard showed unexpected volatility across several holdings.",
+      ),
+    ).toBe(false);
   });
 
-  it("does not flag when any word is outside 3-8 lowercase letters", () => {
-    const words = TWELVE.split(" ");
-    expect(looksLikeSeedPhrase([...words.slice(0, 11), "ab"].join(" "))).toBe(false);
-    expect(looksLikeSeedPhrase([...words.slice(0, 11), "abcdefghi"].join(" "))).toBe(false);
-    expect(looksLikeSeedPhrase([...words.slice(0, 11), "Abandon"].join(" "))).toBe(false);
-    expect(looksLikeSeedPhrase([...words.slice(0, 11), "abandon,"].join(" "))).toBe(false);
+  it("known limitation: twelve or more short plain words are indistinguishable from a phrase", () => {
+    expect(
+      looksLikeSeedPhrase("Please check that the alert about the price drop was sent before noon today"),
+    ).toBe(true);
   });
 
-  it("does not flag empty text or a bare command", () => {
+  it("does not flag empty text, digits only or a bare command", () => {
     expect(looksLikeSeedPhrase("")).toBe(false);
     expect(looksLikeSeedPhrase("   ")).toBe(false);
     expect(looksLikeSeedPhrase("/status")).toBe(false);
+    expect(looksLikeSeedPhrase("1 2 3 4 5 6 7 8 9 10 11 12")).toBe(false);
   });
 });

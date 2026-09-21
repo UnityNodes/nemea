@@ -3,9 +3,10 @@ import { BotError } from "grammy";
 import { DISCLAIMER } from "@nemea/shared-types";
 import type { FetchFn } from "../src/api-client.ts";
 import { escapeHtml } from "../src/format.ts";
-import { harness, jsonResponse, textUpdate } from "./helpers.ts";
+import { TEST_TOKEN, harness, jsonResponse, textUpdate } from "./helpers.ts";
 
 const SEED = "abandon ability able about above absent absorb abstract absurd abuse access accident";
+const HEX_KEY = "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318";
 
 const LINKED = {
   linked: true,
@@ -84,7 +85,7 @@ describe("/start with a code", () => {
     await h.send(textUpdate("/start ABC123"));
     expect(h.messages()).toEqual(["Nemea is unreachable right now, try again in a minute."]);
     expect(errorSpy).toHaveBeenCalledTimes(1);
-    expect(String(errorSpy.mock.calls[0]?.[1])).toContain("fetch failed");
+    expect(String(errorSpy.mock.calls[0]?.[0])).toContain("fetch failed");
   });
 
   it("surfaces a malformed 200 as an error message, not as a link", async () => {
@@ -94,6 +95,21 @@ describe("/start with a code", () => {
     expect(h.messages()[0]).toContain("could not understand");
     expect(h.messages()[0]).not.toContain("Linked");
     expect(errorSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not call the API for a code longer than 16 characters", async () => {
+    const fetchFn = route(() => jsonResponse(200, { ok: true }));
+    const h = harness(fetchFn);
+    await h.send(textUpdate("/start ABCDEFGH12345678X"));
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(h.messages()[0]).toContain("not recognized");
+  });
+
+  it("accepts an 8 character base64url code with dash and underscore", async () => {
+    const fetchFn = route(() => jsonResponse(200, { ok: true }));
+    const h = harness(fetchFn);
+    await h.send(textUpdate("/start aB3_-xY9"));
+    expect(JSON.parse(String(fetchFn.mock.calls[0]![1].body))).toMatchObject({ code: "aB3_-xY9" });
   });
 
   it("does not call the API for a code with illegal characters", async () => {
@@ -295,6 +311,43 @@ describe("seed phrase safety", () => {
     expect(h.messages()[0]).not.toContain("seed phrase");
     expect(h.messages()[0]).toContain("/help");
   });
+
+  it("catches a capitalised, numbered phrase and never forwards it", async () => {
+    const fetchFn = route(() => jsonResponse(200, { ok: true }));
+    const h = harness(fetchFn);
+    const numbered = SEED.split(" ")
+      .map((word, index) => `${index + 1}. ${index === 0 ? word.toUpperCase() : word}`)
+      .join("\n");
+    await h.send(textUpdate(numbered));
+    expect(h.callsTo("deleteMessage")).toHaveLength(1);
+    expect(h.messages()[0]).toContain("Never share your seed phrase");
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("catches a bare private key and never echoes it", async () => {
+    const fetchFn = route(() => jsonResponse(200, { ok: true }));
+    const h = harness(fetchFn);
+    await h.send(textUpdate(`0x${HEX_KEY}`));
+    expect(h.callsTo("deleteMessage")).toHaveLength(1);
+    expect(h.messages()).toHaveLength(1);
+    expect(h.messages()[0]).toContain("private key");
+    expect(h.messages()[0]).not.toContain(HEX_KEY);
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("does not send a 64-hex key to the API as a link code", async () => {
+    const fetchFn = route(() => jsonResponse(200, { ok: true }));
+    const h = harness(fetchFn);
+    await h.send(textUpdate(`/start ${HEX_KEY}`));
+    await h.send(textUpdate(`/start 0x${HEX_KEY}`));
+    expect(fetchFn).not.toHaveBeenCalled();
+    expect(h.callsTo("deleteMessage")).toHaveLength(2);
+    expect(h.messages()).toHaveLength(2);
+    for (const text of h.messages()) {
+      expect(text).toContain("Never share your seed phrase");
+      expect(text).not.toContain(HEX_KEY);
+    }
+  });
 });
 
 describe("handler errors", () => {
@@ -312,5 +365,43 @@ describe("handler errors", () => {
     });
     await h.bot.stop();
     await expect(started).resolves.toBeUndefined();
+  });
+});
+
+describe("token redaction in logs", () => {
+  function assertNoTokenLogged() {
+    const logged = JSON.stringify(errorSpy.mock.calls);
+    expect(logged).not.toContain(TEST_TOKEN);
+    expect(logged).not.toContain(TEST_TOKEN.split(":")[1]);
+  }
+
+  it("redacts the token when a reply fails on the network and bot.catch logs it", async () => {
+    const h = harness(route(() => jsonResponse(200, { linked: false })), { throwMethods: ["sendMessage"] });
+    h.pending.push(textUpdate("/status"));
+    const started = h.bot.start();
+    await vi.waitFor(() => {
+      expect(errorSpy.mock.calls.some((call) => String(call[0]).includes("unhandled error"))).toBe(true);
+    });
+    await h.bot.stop();
+    await started;
+    expect(JSON.stringify(errorSpy.mock.calls)).toContain("bot<redacted>");
+    assertNoTokenLogged();
+  });
+
+  it("redacts the token when deleting a seed-phrase message fails on the network", async () => {
+    const h = harness(route(() => jsonResponse(200, { ok: true })), { throwMethods: ["deleteMessage"] });
+    await h.send(textUpdate(SEED));
+    expect(h.messages()[0]).toContain("Delete it yourself");
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    assertNoTokenLogged();
+  });
+
+  it("redacts the token when an API failure carries it in its message", async () => {
+    const leaky = new TypeError(`fetch failed for bot${TEST_TOKEN}`);
+    const h = harness(vi.fn<FetchFn>().mockRejectedValue(leaky));
+    await h.send(textUpdate("/status"));
+    expect(h.messages()).toEqual(["Nemea is unreachable right now, try again in a minute."]);
+    expect(errorSpy).toHaveBeenCalledTimes(1);
+    assertNoTokenLogged();
   });
 });

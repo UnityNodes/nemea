@@ -17,6 +17,7 @@ import {
   unlinkedMessage,
   unreachableMessage,
 } from "./format.ts";
+import { describeError } from "./redact.ts";
 import { looksLikeSeedPhrase } from "./safety.ts";
 
 export type BotApi = Pick<InternalApiClient, "link" | "unlink" | "summary">;
@@ -28,7 +29,7 @@ export type BotDeps = {
   botInfo?: UserFromGetMe;
 };
 
-const LINK_CODE_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+const LINK_CODE_PATTERN = /^[A-Za-z0-9_-]{1,16}$/;
 
 function errorReply(error: unknown): string {
   if (error instanceof ApiUnreachableError) return unreachableMessage();
@@ -43,22 +44,26 @@ async function reply(ctx: Context, html: string): Promise<void> {
   });
 }
 
-async function answer(ctx: Context, command: string, build: () => Promise<string>): Promise<void> {
-  let html: string;
-  try {
-    html = await build();
-  } catch (error) {
-    console.error(`[bot] /${command} failed in chat ${ctx.chat?.id}:`, error);
-    html = errorReply(error);
-  }
-  await reply(ctx, html);
-}
-
 export function createBot(deps: BotDeps): Bot {
   const bot = new Bot(deps.token, { botInfo: deps.botInfo });
 
+  const logError = (context: string, error: unknown): void => {
+    console.error(`[bot] ${context}: ${describeError(error, deps.token)}`);
+  };
+
+  const answer = async (ctx: Context, command: string, build: () => Promise<string>): Promise<void> => {
+    let html: string;
+    try {
+      html = await build();
+    } catch (error) {
+      logError(`/${command} failed in chat ${ctx.chat?.id}`, error);
+      html = errorReply(error);
+    }
+    await reply(ctx, html);
+  };
+
   bot.catch((error) => {
-    console.error(`[bot] unhandled error for update ${error.ctx.update.update_id}:`, error.error);
+    logError(`unhandled error for update ${error.ctx.update.update_id}`, error.error);
   });
 
   const priv = bot.chatType("private");
@@ -73,7 +78,7 @@ export function createBot(deps: BotDeps): Bot {
       await ctx.deleteMessage();
       deleted = true;
     } catch (error) {
-      console.error(`[bot] could not delete a seed-phrase-like message in chat ${ctx.chat.id}:`, error);
+      logError(`could not delete a seed-phrase-like message in chat ${ctx.chat.id}`, error);
     }
     await reply(ctx, seedPhraseWarning(deleted));
   });

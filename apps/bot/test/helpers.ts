@@ -18,6 +18,12 @@ export const BOT_INFO: UserFromGetMe = {
   supports_join_request_queries: false,
 };
 
+export const TEST_TOKEN = "7770001112:AAFakeTokenForTestsOnly_abc-123";
+
+export function leakyNetworkError(method: string): Error {
+  return new Error(`request to https://api.telegram.org/bot${TEST_TOKEN}/${method} failed, reason: socket hang up (token ${TEST_TOKEN})`);
+}
+
 export type OutboundCall = { method: string; payload: Record<string, unknown> };
 
 export function jsonResponse(status: number, body: unknown): Response {
@@ -61,12 +67,13 @@ export function textUpdate(
 export type HarnessOptions = {
   publicWebUrl?: string | null;
   failMethods?: string[];
+  throwMethods?: string[];
 };
 
 export function harness(fetchFn: FetchFn, options: HarnessOptions = {}) {
-  const { publicWebUrl = null, failMethods = [] } = options;
+  const { publicWebUrl = null, failMethods = [], throwMethods = [] } = options;
   const api = new InternalApiClient({ origin: "http://api.test", secret: "s3cret", fetch: fetchFn });
-  const bot = createBot({ token: "123:fake", api, publicWebUrl, botInfo: BOT_INFO });
+  const bot = createBot({ token: TEST_TOKEN, api, publicWebUrl, botInfo: BOT_INFO });
   const calls: OutboundCall[] = [];
   const pending: Update[] = [];
 
@@ -76,6 +83,7 @@ export function harness(fetchFn: FetchFn, options: HarnessOptions = {}) {
       return { ok: true, result: pending.splice(0) } as never;
     }
     calls.push({ method, payload: payload as Record<string, unknown> });
+    if (throwMethods.includes(method)) throw leakyNetworkError(method);
     if (failMethods.includes(method)) {
       return { ok: false, error_code: 400, description: `Bad Request: ${method} refused` } as never;
     }

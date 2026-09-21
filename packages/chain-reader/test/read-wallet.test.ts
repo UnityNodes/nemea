@@ -42,9 +42,10 @@ function fakeCmc(metas: TokenMeta[]) {
   return {
     calls,
     cmc: {
-      getInfoByAddresses: async (addresses: readonly string[]) => {
-        calls.push([...addresses]);
-        return metas;
+      getInfoBySymbols: async (symbols: readonly string[]) => {
+        calls.push([...symbols]);
+        const wanted = new Set(symbols.map((x) => x.toUpperCase()));
+        return metas.filter((m) => wanted.has(m.symbol.toUpperCase()));
       },
     },
   };
@@ -186,7 +187,7 @@ describe("readWallet input validation", () => {
 
 describe("readWallet CoinMarketCap matching", () => {
   it("uses CMC's symbol and name, lowercases the contract and maps native ETH to id 1027", async () => {
-    const p = fakeProvider("p", (_a, chain) => [raw(chain, null, "WEIRD", 3), raw(chain, USDC_ETH.toUpperCase().replace("0X", "0x"), "usdc.provider", 250, { looksLikeSpam: false })]);
+    const p = fakeProvider("p", (_a, chain) => [raw(chain, null, "WEIRD", 3), raw(chain, USDC_ETH.toUpperCase().replace("0X", "0x"), "usdc", 250, { looksLikeSpam: false })]);
     const { cmc } = fakeCmc([meta(3408, "USDC", "USD Coin", [{ chain: "ethereum", address: USDC_ETH }])]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
     expect(preview.items).toEqual([
@@ -206,20 +207,20 @@ describe("readWallet CoinMarketCap matching", () => {
   });
 
   it("mentions the provider when it flagged the token as spam", async () => {
-    const p = fakeProvider("blockscout", (_a, chain) => [raw(chain, SPAM, null, 5, { looksLikeSpam: true, provider: "blockscout" })]);
+    const p = fakeProvider("blockscout", (_a, chain) => [raw(chain, SPAM, "SPAMMY", 5, { looksLikeSpam: true, provider: "blockscout" })]);
     const { cmc } = fakeCmc([]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
-    expect(preview.skipped[0]?.symbol).toBeNull();
+    expect(preview.skipped[0]?.symbol).toBe("SPAMMY");
     expect(preview.skipped[0]?.reason).toContain(UNLISTED_REASON);
     expect(preview.skipped[0]?.reason).toContain("blockscout does not vouch for this token");
   });
 
   it("matches on (chain, address): the same address listed on another chain must not match (negative control)", async () => {
-    const p = fakeProvider("p", (_a, chain) => (chain === "base" ? [raw("base", SHARED, "SAME", 7)] : chain === "ethereum" ? [raw("ethereum", SHARED, "SAME", 9)] : []));
+    const p = fakeProvider("p", (_a, chain) => (chain === "base" ? [raw("base", SHARED, "REAL", 7)] : chain === "ethereum" ? [raw("ethereum", SHARED, "REAL", 9)] : []));
     const { cmc } = fakeCmc([meta(555, "REAL", "Real Token", [{ chain: "ethereum", address: SHARED }])]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum", "base"], providers: all([p]), cmc });
     expect(preview.items).toEqual([{ cmcId: 555, symbol: "REAL", name: "Real Token", amount: 9, chain: "ethereum", contractAddress: SHARED }]);
-    expect(preview.skipped).toEqual([{ chain: "base", contractAddress: SHARED, symbol: "SAME", reason: UNLISTED_REASON }]);
+    expect(preview.skipped).toEqual([{ chain: "base", contractAddress: SHARED, symbol: "REAL", reason: UNLISTED_REASON }]);
   });
 
   it("does not match a token that only shares CMC's symbol (negative control)", async () => {
@@ -251,11 +252,11 @@ describe("readWallet CoinMarketCap matching", () => {
     expect(preview.items.map((i) => i.amount)).toEqual([10]);
   });
 
-  it("sends one CMC request with the unique lowercased addresses across chains", async () => {
-    const p = fakeProvider("p", (_a, chain) => [raw(chain, SHARED.toUpperCase().replace("0X", "0x"), "S", 1), raw(chain, SPAM, "X", 1)]);
+  it("sends one CMC request with the unique symbols across chains and case spellings", async () => {
+    const p = fakeProvider("p", (_a, chain) => [raw(chain, SHARED, "s", 1), raw(chain, SPAM, "X", 1), raw(chain, IMPOSTOR, "S", 1)]);
     const { cmc, calls } = fakeCmc([]);
     await readWallet({ address: VITALIK, chains: ALL_CHAINS, providers: all([p]), cmc });
-    expect(calls).toEqual([[SHARED, SPAM]]);
+    expect(calls).toEqual([["S", "X"]]);
   });
 
   it("does not call CMC when there are only native balances", async () => {
@@ -288,7 +289,7 @@ describe("readWallet CoinMarketCap matching", () => {
 
   it("rethrows a CMC failure instead of pretending nothing matched", async () => {
     const p = fakeProvider("p", (_a, chain) => [raw(chain, USDC_ETH, "USDC", 1)]);
-    const cmc = { getInfoByAddresses: async () => { throw new Error("CMC rate limited"); } };
+    const cmc = { getInfoBySymbols: async () => { throw new Error("CMC rate limited"); } };
     await expect(readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc })).rejects.toThrow("CMC rate limited");
   });
 
@@ -323,9 +324,9 @@ describe("readWallet pre-filter before CoinMarketCap", () => {
       priced(chain, 4, 1_000_000, 0.0000001),
       priced(chain, 5, 3, 10),
     ]);
-    const { cmc, calls } = fakeCmc([meta(1, "A", "A coin", [{ chain: "ethereum", address: addr(1) }]), meta(5, "E", "E coin", [{ chain: "ethereum", address: addr(5) }])]);
+    const { cmc, calls } = fakeCmc([meta(1, "T1", "A coin", [{ chain: "ethereum", address: addr(1) }]), meta(5, "T5", "E coin", [{ chain: "ethereum", address: addr(5) }])]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
-    expect(calls).toEqual([[addr(1), addr(5)]]);
+    expect(calls).toEqual([["T1", "T5"]]);
     expect(preview.items.map((i) => [i.cmcId, i.amount])).toEqual([[1, 100], [5, 3]]);
     expect(preview.skipped).toEqual([{ chain: "ethereum", contractAddress: null, symbol: null, reason: "3 tokens with no market price or worth under $1 were ignored (mostly airdrop spam)" }]);
   });
@@ -334,7 +335,7 @@ describe("readWallet pre-filter before CoinMarketCap", () => {
     const p = hintedProvider((chain) => [priced(chain, 1, 2, 0.5), priced(chain, 2, 99, 0.01)]);
     const { cmc, calls } = fakeCmc([]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
-    expect(calls).toEqual([[addr(1)]]);
+    expect(calls).toEqual([["T1"]]);
     expect(preview.skipped.filter((s) => s.contractAddress === null)).toEqual([{ chain: "ethereum", contractAddress: null, symbol: null, reason: "1 tokens with no market price or worth under $1 were ignored (mostly airdrop spam)" }]);
     expect(preview.skipped.filter((s) => s.contractAddress === addr(1))).toHaveLength(1);
   });
@@ -351,11 +352,11 @@ describe("readWallet pre-filter before CoinMarketCap", () => {
     const p = hintedProvider((chain) => Array.from({ length: 70 }, (_, i) => priced(chain, i + 1, 1, 10 + i)));
     const { cmc, calls } = fakeCmc([]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
-    const expected = Array.from({ length: 60 }, (_, i) => addr(70 - i));
+    const expected = Array.from({ length: 60 }, (_, i) => `T${70 - i}`);
     expect(calls).toEqual([expected]);
     expect(preview.skipped.filter((s) => s.contractAddress === null)).toEqual([{ chain: "ethereum", contractAddress: null, symbol: null, reason: "10 smaller tokens beyond the 60 largest were not checked" }]);
-    expect(calls[0]).not.toContain(addr(1));
-    expect(calls[0]).toContain(addr(11));
+    expect(calls[0]).not.toContain("T1");
+    expect(calls[0]).toContain("T11");
   });
 
   it("emits both aggregate entries when tokens were dropped and capped, without one entry per dropped token", async () => {
@@ -374,7 +375,7 @@ describe("readWallet pre-filter before CoinMarketCap", () => {
 
   it("emits no aggregate entry when nothing was dropped", async () => {
     const p = hintedProvider((chain) => [priced(chain, 1, 10, 1)]);
-    const { cmc } = fakeCmc([meta(1, "A", "A", [{ chain: "ethereum", address: addr(1) }])]);
+    const { cmc } = fakeCmc([meta(1, "T1", "A", [{ chain: "ethereum", address: addr(1) }])]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
     expect(preview.skipped).toEqual([]);
     expect(preview.items).toHaveLength(1);
@@ -391,7 +392,7 @@ describe("readWallet pre-filter before CoinMarketCap", () => {
     const list = calls[0] ?? [];
     expect(calls).toHaveLength(1);
     expect(list).toHaveLength(1 + 60 + 1);
-    expect(list[0]).toBe(addr(1));
+    expect(list[0]).toBe("T1");
     expect(preview.skipped.filter((s) => s.contractAddress === null).map((s) => [s.chain, s.reason])).toEqual([
       ["ethereum", "2 tokens with no market price or worth under $1 were ignored (mostly airdrop spam)"],
       ["base", "1 smaller tokens beyond the 60 largest were not checked"],
@@ -418,9 +419,9 @@ describe("readWallet pre-filter before CoinMarketCap", () => {
 
   it("uses the hint only as a filter: amounts come from the raw balance and the hint is never exposed", async () => {
     const p = hintedProvider((chain) => [priced(chain, 1, 1234.5, 0.0123), priced(chain, 2, 50, 4.56)]);
-    const { cmc } = fakeCmc([meta(1, "A", "A coin", [{ chain: "ethereum", address: addr(1) }])]);
+    const { cmc } = fakeCmc([meta(1, "T1", "A coin", [{ chain: "ethereum", address: addr(1) }])]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
-    expect(preview.items).toEqual([{ cmcId: 1, symbol: "A", name: "A coin", amount: 1234.5, chain: "ethereum", contractAddress: addr(1) }]);
+    expect(preview.items).toEqual([{ cmcId: 1, symbol: "T1", name: "A coin", amount: 1234.5, chain: "ethereum", contractAddress: addr(1) }]);
     const text = JSON.stringify(preview);
     for (const leaked of ["0.0123", "4.56", "usdRateHint", "hintValue", "15.18"]) expect(text).not.toContain(leaked);
   });
@@ -440,7 +441,7 @@ describe("readWallet pre-filter before CoinMarketCap", () => {
     const unhinted = fakeProvider("plain", (_a, chain) => [raw(chain, addr(1), "A", 1, { usdRateHint: null })]);
     const { cmc, calls } = fakeCmc([]);
     await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([hintedFails, unhinted]), cmc });
-    expect(calls).toEqual([[addr(1)]]);
+    expect(calls).toEqual([["A"]]);
   });
 });
 
@@ -449,7 +450,7 @@ describe("readWallet cap for providers without a price hint", () => {
     const p = fakeProvider("etherscan-like", (_a, chain) => Array.from({ length: 45 }, (_, i) => raw(chain, addr(i + 1), `T${i}`, 1, { usdRateHint: null })));
     const { cmc, calls } = fakeCmc([]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
-    expect(calls).toEqual([Array.from({ length: 40 }, (_, i) => addr(i + 1))]);
+    expect(calls).toEqual([Array.from({ length: 40 }, (_, i) => `T${i}`)]);
     expect(preview.skipped.filter((s) => s.contractAddress === null)).toEqual([{ chain: "ethereum", contractAddress: null, symbol: null, reason: "5 tokens beyond the first 40 were not checked" }]);
     expect(preview.skipped).toHaveLength(1 + 40);
   });
@@ -458,16 +459,114 @@ describe("readWallet cap for providers without a price hint", () => {
     const p = fakeProvider("etherscan-like", (_a, chain) => [raw(chain, addr(1), "DUST", 0.000001, { usdRateHint: null })]);
     const { cmc, calls } = fakeCmc([meta(7, "DUST", "Dust", [{ chain: "ethereum", address: addr(1) }])]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
-    expect(calls).toEqual([[addr(1)]]);
+    expect(calls).toEqual([["DUST"]]);
     expect(preview.items.map((i) => i.cmcId)).toEqual([7]);
     expect(preview.skipped).toEqual([]);
   });
 
   it("applies the 40 cap per chain", async () => {
-    const p = fakeProvider("etherscan-like", (_a, chain) => Array.from({ length: 41 }, (_, i) => raw(chain, addr((chain === "base" ? 1000 : 0) + i + 1), `T${i}`, 1)));
+    const p = fakeProvider("etherscan-like", (_a, chain) => Array.from({ length: 41 }, (_, i) => raw(chain, addr((chain === "base" ? 1000 : 0) + i + 1), `${chain === "base" ? "B" : "E"}${i}`, 1)));
     const { cmc, calls } = fakeCmc([]);
     const preview = await readWallet({ address: VITALIK, chains: ["ethereum", "base"], providers: all([p]), cmc });
     expect(calls[0]).toHaveLength(80);
     expect(preview.skipped.filter((s) => s.contractAddress === null).map((s) => s.chain)).toEqual(["ethereum", "base"]);
+  });
+});
+
+describe("readWallet symbol lookup", () => {
+  const PEPE_REAL = addr(0x7e9e);
+  const PEPE_FAKE_A = addr(0xfa1e);
+  const PEPE_FAKE_B = addr(0xfb1e);
+
+  it("finds the right coin when it is not the first one sharing the symbol", async () => {
+    const p = fakeProvider("p", (_a, chain) => [raw(chain, PEPE_REAL, "PEPE", 1000)]);
+    const { cmc, calls } = fakeCmc([
+      meta(901, "PEPE", "Pepe Clone A", [{ chain: "ethereum", address: PEPE_FAKE_A }]),
+      meta(902, "PEPE", "Pepe Clone B", [{ chain: "base", address: PEPE_REAL }]),
+      meta(24478, "PEPE", "Pepe", [{ chain: "ethereum", address: PEPE_REAL }]),
+      meta(903, "PEPE", "Pepe Clone C", [{ chain: "ethereum", address: PEPE_FAKE_B }]),
+    ]);
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
+    expect(calls).toEqual([["PEPE"]]);
+    expect(preview.items).toEqual([{ cmcId: 24478, symbol: "PEPE", name: "Pepe", amount: 1000, chain: "ethereum", contractAddress: PEPE_REAL }]);
+    expect(preview.skipped).toEqual([]);
+  });
+
+  it("does not match a spam coin that shares the symbol but has a different contract (negative control)", async () => {
+    const p = fakeProvider("blockscout", (_a, chain) => [raw(chain, PEPE_FAKE_A, "PEPE", 5_000_000, { looksLikeSpam: true, provider: "blockscout" })]);
+    const { cmc } = fakeCmc([
+      meta(24478, "PEPE", "Pepe", [{ chain: "ethereum", address: PEPE_REAL }]),
+      meta(902, "PEPE", "Pepe Clone B", [{ chain: "base", address: PEPE_FAKE_A }]),
+    ]);
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
+    expect(preview.items).toEqual([]);
+    expect(preview.skipped).toEqual([{ chain: "ethereum", contractAddress: PEPE_FAKE_A, symbol: "PEPE", reason: `${UNLISTED_REASON} (blockscout does not vouch for this token)` }]);
+  });
+
+  it("looks up two tokens that share a symbol on one chain with a single symbol and matches each by contract", async () => {
+    const p = fakeProvider("p", (_a, chain) => [raw(chain, PEPE_REAL, "PEPE", 10), raw(chain, PEPE_FAKE_A, "pepe", 20)]);
+    const { cmc, calls } = fakeCmc([meta(24478, "PEPE", "Pepe", [{ chain: "ethereum", address: PEPE_REAL }])]);
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
+    expect(calls).toEqual([["PEPE"]]);
+    expect(preview.items.map((i) => [i.cmcId, i.contractAddress])).toEqual([[24478, PEPE_REAL]]);
+    expect(preview.skipped.map((x) => x.contractAddress)).toEqual([PEPE_FAKE_A]);
+  });
+
+  it("leaves a token unmatched when CMC lists it under a different symbol than the explorer reports", async () => {
+    const p = fakeProvider("p", (_a, chain) => [raw(chain, USDC_ETH, "USDC.e", 10)]);
+    const { cmc, calls } = fakeCmc([meta(3408, "USDC", "USD Coin", [{ chain: "ethereum", address: USDC_ETH }])]);
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
+    expect(calls).toEqual([["USDC.E"]]);
+    expect(preview.items).toEqual([]);
+    expect(preview.skipped).toEqual([{ chain: "ethereum", contractAddress: USDC_ETH, symbol: "USDC.e", reason: UNLISTED_REASON }]);
+  });
+
+  it.each([null, "", " ", "has space", "a/b", "x".repeat(21), "\u{1F4A9}", "USD C", "$$$"])("skips a token with the unusable symbol %j without asking CMC about it", async (symbol) => {
+    const p = fakeProvider("p", (_a, chain) => [raw(chain, addr(1), symbol, 5), raw(chain, addr(2), "GOOD", 7)]);
+    const { cmc, calls } = fakeCmc([meta(1, "GOOD", "Good", [{ chain: "ethereum", address: addr(2) }])]);
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
+    expect(calls).toEqual([["GOOD"]]);
+    expect(preview.items.map((i) => i.contractAddress)).toEqual([addr(2)]);
+    expect(preview.skipped).toEqual([{ chain: "ethereum", contractAddress: addr(1), symbol, reason: "No usable token symbol, ignored" }]);
+  });
+
+  it("accepts the boundary symbols of 1 and 20 characters and the punctuation . _ -", async () => {
+    const symbols = ["A", "A".repeat(20), "USDC.e", "a_b", "x-y"];
+    const p = fakeProvider("p", (_a, chain) => symbols.map((sym, i) => raw(chain, addr(i + 1), sym, 1)));
+    const { cmc, calls } = fakeCmc([]);
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
+    expect(calls).toEqual([["A", "A".repeat(20), "USDC.E", "A_B", "X-Y"]]);
+    expect(preview.skipped.every((x) => x.reason === UNLISTED_REASON)).toBe(true);
+  });
+
+  it("does not call CMC when every kept token lacks a usable symbol", async () => {
+    const p = fakeProvider("p", (_a, chain) => [raw(chain, addr(1), null, 5), raw(chain, addr(2), "", 5)]);
+    const { cmc, calls } = fakeCmc([]);
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
+    expect(calls).toEqual([]);
+    expect(preview.skipped.map((x) => x.reason)).toEqual(["No usable token symbol, ignored", "No usable token symbol, ignored"]);
+  });
+
+  it("asks about the symbols of kept tokens only, deduped across chains, in one call", async () => {
+    const p = hintedProvider((chain) => [
+      priced(chain, 1, 10, 1, { symbol: "shared" }),
+      priced(chain, chain === "base" ? 3 : 2, 10, 1, { symbol: chain === "base" ? "BASEONLY" : "ETHONLY" }),
+      priced(chain, 99, 10, null, { symbol: "DROPPED" }),
+    ]);
+    const { cmc, calls } = fakeCmc([]);
+    await readWallet({ address: VITALIK, chains: ["ethereum", "base"], providers: all([p]), cmc });
+    expect(calls).toEqual([["SHARED", "ETHONLY", "BASEONLY"]]);
+  });
+
+  it("never calls getInfoByAddresses", async () => {
+    const p = fakeProvider("p", (_a, chain) => [raw(chain, USDC_ETH, "USDC", 1)]);
+    const cmc = {
+      getInfoBySymbols: async () => [] as TokenMeta[],
+      getInfoByAddresses: async () => {
+        throw new Error("address lookup is unusable");
+      },
+    };
+    const preview = await readWallet({ address: VITALIK, chains: ["ethereum"], providers: all([p]), cmc });
+    expect(preview.skipped).toHaveLength(1);
   });
 });

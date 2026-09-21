@@ -1,14 +1,14 @@
 import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Bot, GrammyError } from "grammy";
+import { Bot, GrammyError, HttpError } from "grammy";
 import {
   HealthState,
   createHealthServer,
   describeStartFailure,
   superviseBot,
 } from "../src/health.ts";
-import { BOT_INFO } from "./helpers.ts";
+import { BOT_INFO, TEST_TOKEN, leakyNetworkError } from "./helpers.ts";
 
 let errorSpy: ReturnType<typeof vi.spyOn>;
 const servers: Server[] = [];
@@ -54,7 +54,7 @@ describe("health server", () => {
     const supervised = superviseBot(async (onStart) => {
       reachStart = onStart;
       await finished;
-    }, state);
+    }, state, TEST_TOKEN);
 
     expect((await health(base)).body).toMatchObject({ ok: false, bot: "not_running" });
     reachStart();
@@ -71,7 +71,7 @@ describe("health server", () => {
   it("reports the reason after a rejected start and keeps serving", async () => {
     const state = new HealthState();
     const base = await listen(state);
-    await superviseBot(() => Promise.reject(new Error("boom")), state);
+    await superviseBot(() => Promise.reject(new Error("boom")), state, TEST_TOKEN);
     expect(await health(base)).toEqual({
       status: 503,
       body: { ok: false, bot: "not_running", reason: "bot is not running: Error: boom" },
@@ -87,6 +87,34 @@ describe("health server", () => {
   });
 });
 
+describe("token redaction", () => {
+  it("never puts the bot token in /health or in console output when the start fails on the network", async () => {
+    const state = new HealthState();
+    const base = await listen(state);
+    const failure = new HttpError("Network request for 'getMe' failed!", leakyNetworkError("getMe"));
+    await superviseBot(() => Promise.reject(failure), state, TEST_TOKEN);
+
+    const { body } = await health(base);
+    expect(JSON.stringify(body)).not.toContain(TEST_TOKEN);
+    expect(JSON.stringify(body)).not.toContain(TEST_TOKEN.split(":")[1]);
+    expect(JSON.stringify(body)).toContain("bot<redacted>");
+    expect(errorSpy).toHaveBeenCalled();
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain(TEST_TOKEN);
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain(TEST_TOKEN.split(":")[1]);
+  });
+
+  it("redacts a token carried in the cause chain of a plain error", async () => {
+    const state = new HealthState();
+    await superviseBot(
+      () => Promise.reject(new Error("start failed", { cause: leakyNetworkError("getUpdates") })),
+      state,
+      TEST_TOKEN,
+    );
+    expect(state.snapshot().reason).toContain("start failed");
+    expect(JSON.stringify(state.snapshot())).not.toContain(TEST_TOKEN);
+  });
+});
+
 describe("start failures against a real grammY bot", () => {
   it("turns a 404 on getMe into the token-rejected reason", async () => {
     const bot = new Bot("123:invalid");
@@ -95,7 +123,7 @@ describe("start failures against a real grammY bot", () => {
       return { ok: true, result: true } as never;
     });
     const state = new HealthState();
-    await superviseBot((onStart) => bot.start({ onStart: () => onStart() }), state);
+    await superviseBot((onStart) => bot.start({ onStart: () => onStart() }), state, TEST_TOKEN);
 
     const reason =
       "TELEGRAM_BOT_TOKEN rejected by Telegram (404 on getMe) — check the token from @BotFather";
@@ -123,6 +151,7 @@ describe("start failures against a real grammY bot", () => {
           },
         }),
       state,
+      TEST_TOKEN,
     );
 
     expect(seenAtStart).toEqual({ ok: true, bot: "running" });
@@ -133,12 +162,12 @@ describe("start failures against a real grammY bot", () => {
 describe("describeStartFailure", () => {
   it("recognises a rejected token by 401 as well", () => {
     const error = new GrammyError("x", { ok: false, error_code: 401, description: "Unauthorized" }, "getMe", {});
-    expect(describeStartFailure(error)).toContain("TELEGRAM_BOT_TOKEN rejected by Telegram (401 on getMe)");
+    expect(describeStartFailure(error, TEST_TOKEN)).toContain("TELEGRAM_BOT_TOKEN rejected by Telegram (401 on getMe)");
   });
 
   it("does not blame the token for other failures", () => {
     const error = new GrammyError("x", { ok: false, error_code: 409, description: "Conflict" }, "getUpdates", {});
-    expect(describeStartFailure(error)).not.toContain("TELEGRAM_BOT_TOKEN");
-    expect(describeStartFailure(new Error("network down"))).toBe("bot is not running: Error: network down");
+    expect(describeStartFailure(error, TEST_TOKEN)).not.toContain("TELEGRAM_BOT_TOKEN");
+    expect(describeStartFailure(new Error("network down"), TEST_TOKEN)).toBe("bot is not running: Error: network down");
   });
 });

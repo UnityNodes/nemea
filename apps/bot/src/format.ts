@@ -109,7 +109,7 @@ export function seedPhraseWarning(deleted: boolean): string {
     ? "I deleted your message."
     : "I could not delete your message. Delete it yourself right now.";
   return [
-    "<b>Never share your seed phrase.</b>",
+    "<b>Never share your seed phrase or private key.</b>",
     "Nemea will never ask for your seed phrase or private keys, and neither will anyone trustworthy.",
     handling,
     "If that was a real wallet phrase, treat it as exposed: create a new wallet and move your funds.",
