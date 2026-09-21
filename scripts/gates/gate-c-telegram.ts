@@ -12,7 +12,7 @@ if (me.status === 404 || !meBody?.ok) {
   checks.push({
     name: "getMe",
     status: "fail",
-    detail: `HTTP ${me.status} ${meBody?.description ?? ""} — 404 here means the token belongs to no bot (regenerate in @BotFather)`,
+    detail: `HTTP ${me.status} ${meBody?.description ?? ""} — Telegram answers 401 or 404 on getMe when the token belongs to no bot (regenerate it in @BotFather)`,
   });
   report("Gate C", checks);
 }
