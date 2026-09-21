@@ -63,6 +63,12 @@ describe("similar drops", () => {
     expect(s?.events).toHaveLength(1);
   });
 
+  it("counts a slide that keeps falling for five days as one event, not two", () => {
+    const s = findSimilarDrops(series([...calm, 80, 64, 51, 41, 33, ...calm]), 15);
+    expect(s?.events).toHaveLength(1);
+    expect(s?.events[0]?.recoveredAfterDays).not.toBeNull();
+  });
+
   it("returns null, not an empty claim, when there is too little history", () => {
     expect(findSimilarDrops(series([1, 2, 3]), 15)).toBeNull();
   });
@@ -159,6 +165,39 @@ describe("explain: price drops", () => {
       expect(text(e)).toContain("Nothing has been sold");
       expect(text(e)).not.toMatch(NO_ADVICE);
     }
+  });
+});
+
+describe("explain: review regressions", () => {
+  const holdings = [holding(SOL, "SOL", 10), holding(ETH, "ETH", 1)];
+  const metas = [meta(SOL, "SOL", ["layer-1"]), meta(ETH, "ETH", ["smart-contracts"])];
+
+  it("does not compare a one-hour fall with the 24-hour market when the day is quiet", () => {
+    const c = candidate("price_drop_1h", { holdings, metas, quotes: [quote(SOL, "SOL", 100, { percentChange1h: -9, percentChange24h: -1 }), quote(ETH, "ETH", 5000)], global: global(-3.5) });
+    const t = text(explain(explainInput(c)));
+    expect(t).toContain("fast move");
+    expect(t).not.toContain("Everyone");
+  });
+
+  it("never says the market is pulling a coin down when the market is up", () => {
+    const c = candidate("price_drop_24h", { holdings, metas, quotes: [quote(SOL, "SOL", 100, { percentChange24h: -18 }), quote(ETH, "ETH", 5000)], global: global(2) });
+    const t = text(explain(explainInput(c)));
+    expect(t).toContain("much more than the market");
+    expect(t).not.toMatch(/some of the move is shared|most of this is the market|Everyone/);
+  });
+
+  it("does not say a category is down when its average is up", () => {
+    const c = candidate("portfolio_drop", {
+      holdings,
+      metas,
+      quotes: [quote(SOL, "SOL", 100, { percentChange24h: -25 }), quote(ETH, "ETH", 1000, { percentChange24h: -1 })],
+      categories: [category("c1", "Layer 1", 2)],
+      global: global(-7),
+    });
+    expect(c.summary).not.toMatch(/which is down 2%/);
+    const e = explain(explainInput(c));
+    expect(e.headline).not.toContain("because Layer 1 is down");
+    expect(text(e)).not.toMatch(/the whole group is \+2%/);
   });
 });
 

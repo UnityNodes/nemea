@@ -4,7 +4,7 @@ import type { Chain, WalletImportPreview } from "@nemea/shared-types";
 import { sql } from "drizzle-orm";
 import { SessionManager } from "./auth/session.ts";
 import type { AppDeps } from "./app.ts";
-import type { Config } from "./config.ts";
+import { MAX_QUOTE_AGE_MS, type Config } from "./config.ts";
 import { openDb, type DbHandle } from "./db/client.ts";
 import { DeliveryService } from "./services/delivery/index.ts";
 import { EmailSender } from "./services/delivery/email.ts";
@@ -42,8 +42,11 @@ export async function compose(config: Config, overrides: ComposeOverrides = {}):
   const email = config.RESEND_API_KEY && config.EMAIL_FROM ? new EmailSender(config.RESEND_API_KEY, config.EMAIL_FROM, overrides.fetchImpl) : null;
   const push = config.VAPID_PUBLIC_KEY && config.VAPID_PRIVATE_KEY && config.VAPID_SUBJECT ? new PushSender(config.VAPID_PUBLIC_KEY, config.VAPID_PRIVATE_KEY, config.VAPID_SUBJECT) : null;
   const delivery = new DeliveryService(repo, { telegram, email, push }, config.WEB_ORIGIN, log, now, config.ADMIN_TELEGRAM_CHAT_ID ?? null);
-  const evaluator = new Evaluator(repo, market, delivery, log, now);
+  const ageRef: { fn: () => number } = { fn: () => MAX_QUOTE_AGE_MS };
+  const maxQuoteAgeMs = () => ageRef.fn();
+  const evaluator = new Evaluator(repo, market, delivery, log, now, maxQuoteAgeMs);
   const poller = overrides.poller === false || !config.POLLER_ENABLED ? null : new Poller(handle.db, repo, market, evaluator, delivery, log, now);
+  if (poller) ageRef.fn = () => poller.maxQuoteAgeMs();
   const providers = defaultProviders({ etherscanApiKey: config.ETHERSCAN_API_KEY, fetchImpl: overrides.fetchImpl });
   const walletReader =
     overrides.walletReader ??
@@ -63,6 +66,7 @@ export async function compose(config: Config, overrides: ComposeOverrides = {}):
     },
     log,
     now,
+    maxQuoteAgeMs,
     telegramConfigured: !!telegram,
     emailSend: email ? (to, subject, html, text) => email.send(to, subject, html, text) : null,
     pushPublicKey: push?.publicKey ?? null,

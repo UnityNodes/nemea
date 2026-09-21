@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import webpush from "web-push";
 import { privateKeyToAccount } from "viem/accounts";
 import { createSiweMessage } from "viem/siwe";
 import { addHolding, guest, linkTelegram, startHarness, type Harness } from "./harness.ts";
@@ -227,21 +228,14 @@ describe("live monitoring and alerts", () => {
     expect(list.deliveries.find((d: any) => d.channel === "telegram")?.status).toBe("sent");
   });
 
-  it("only refreshes a small holding on the slow lane, so a crash in it is not seen every minute", async () => {
+  it("polls a small holding on every tick when there are few coins, because that costs the same as polling only stablecoins", async () => {
     const c = await guest(h);
     await addHolding(c, BTC, 1);
     await addHolding(c, SOL, 1);
     await h.composed.poller!.tick();
     h.fake.setCoin(SOL, { pct24h: -40, price: 90 });
-    for (let i = 0; i < 5; i++) {
-      h.clock.t += 60_000;
-      await h.composed.poller!.tick();
-    }
-    expect((await c.request("GET", "/alerts")).body.alerts).toEqual([]);
-    for (let i = 0; i < 25; i++) {
-      h.clock.t += 60_000;
-      await h.composed.poller!.tick();
-    }
+    h.clock.t += 60_000;
+    await h.composed.poller!.tick();
     expect((await c.request("GET", "/alerts")).body.alerts.some((a: any) => a.symbol === "SOL")).toBe(true);
   });
 
@@ -507,6 +501,80 @@ describe("channels", () => {
     const r = await c.request("POST", "/channels/push/subscribe", { endpoint: "https://push.example/abc", keys: { p256dh: "x", auth: "y" } });
     expect(r.status).toBe(503);
     expect((await c.request("GET", "/channels/push/public-key")).body.publicKey).toBeNull();
+  });
+});
+
+describe("review hardening", () => {
+  const vapid = webpush.generateVAPIDKeys();
+  const pushConfig = { VAPID_PUBLIC_KEY: vapid.publicKey, VAPID_PRIVATE_KEY: vapid.privateKey, VAPID_SUBJECT: "mailto:ops@nemea.test" };
+  const sub = (endpoint: string) => ({ endpoint, keys: { p256dh: "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM", auth: "tBHItJI5svbpez7KI4CCXg" } });
+
+  it("accepts only real push services, caps subscriptions per user and refuses to hand one browser to two accounts", async () => {
+    await h.close();
+    h = await startHarness({ config: pushConfig });
+    const c = await guest(h);
+    for (const bad of ["https://evil.example/push", "http://fcm.googleapis.com/fcm/send/x", "https://fcm.googleapis.com:8443/x", "https://127.0.0.1/x", "https://user:pw@fcm.googleapis.com/x", "https://fcm.googleapis.com.evil.example/x"]) {
+      expect((await c.request("POST", "/channels/push/subscribe", sub(bad))).status, bad).toBe(400);
+    }
+    for (let i = 0; i < 5; i++) expect((await c.request("POST", "/channels/push/subscribe", sub(`https://fcm.googleapis.com/fcm/send/id${i}`))).status).toBe(201);
+    expect((await c.request("POST", "/channels/push/subscribe", sub("https://fcm.googleapis.com/fcm/send/id5"))).body.error.code).toBe("too_many_subscriptions");
+    expect((await c.request("POST", "/channels/push/subscribe", sub("https://fcm.googleapis.com/fcm/send/id0"))).status).toBe(201);
+    const other = await guest(h);
+    const stolen = await other.request("POST", "/channels/push/subscribe", sub("https://fcm.googleapis.com/fcm/send/id0"));
+    expect(stolen.status).toBe(409);
+    expect((await c.request("GET", "/channels")).body.push.subscribed).toBe(true);
+  });
+
+  it("never lets a portfolio grow past its cap, even when adds race", async () => {
+    const c = await guest(h);
+    const me = (await c.request("GET", "/me")).body.user;
+    const results = await Promise.allSettled(
+      Array.from({ length: 8 }, (_, i) => h.composed.deps.repo.addHolding(me.id, { cmcId: 1000 + i, symbol: `T${i}`, name: `T${i}`, amount: 1, costBasisUsd: null, source: "manual", chain: null, contractAddress: null, walletAddress: null }, 3)),
+    );
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(3);
+    expect(await h.composed.deps.repo.countHoldings(me.id)).toBe(3);
+  });
+
+  it("does not double a wallet import when confirm is sent twice at once, and clears a chain the user emptied", async () => {
+    const c = await guest(h);
+    const address = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
+    const items = [
+      { cmcId: ETH, symbol: "ETH", name: "Ethereum", amount: 1.5, chain: "base", contractAddress: null },
+      { cmcId: ETH, symbol: "ETH", name: "Ethereum", amount: 0.5, chain: "arbitrum", contractAddress: null },
+    ];
+    const both = await Promise.all([c.request("POST", "/portfolio/import-wallet/confirm", { address, items }), c.request("POST", "/portfolio/import-wallet/confirm", { address, items })]);
+    expect(both.map((r) => r.status)).toEqual([201, 201]);
+    expect((await c.request("GET", "/portfolio")).body.holdings).toHaveLength(2);
+    const emptied = await c.request("POST", "/portfolio/import-wallet/confirm", { address, chains: ["base", "arbitrum"], items: [items[0]] });
+    expect(emptied.status).toBe(201);
+    const p = (await c.request("GET", "/portfolio")).body;
+    expect(p.holdings).toHaveLength(1);
+    expect(p.holdings[0].chain).toBe("base");
+    expect((await c.request("POST", "/portfolio/import-wallet/confirm", { address, items: [] })).status).toBe(400);
+  });
+
+  it("survives a malformed cookie and an empty patch", async () => {
+    const c = h.client();
+    const r = await c.request("POST", "/auth/guest", undefined, { cookie: "nemea_session=%" });
+    expect(r.status).toBe(201);
+    await addHolding(c, ETH, 1);
+    const id = (await c.request("GET", "/portfolio")).body.holdings[0].id;
+    expect((await c.request("PATCH", `/portfolio/holdings/${id}`, {})).status).toBe(400);
+  });
+
+  it("treats mail aliases of one inbox as the same address for the confirmation-email limit", async () => {
+    const a = await guest(h);
+    const b = await guest(h);
+    const c = await guest(h);
+    expect((await a.request("POST", "/channels/email", { email: "v.ictim+one@gmail.com" })).status).toBe(202);
+    expect((await b.request("POST", "/channels/email", { email: "victim+two@gmail.com" })).status).toBe(202);
+    expect((await c.request("POST", "/channels/email", { email: "victim@googlemail.com" })).status).toBe(429);
+  });
+
+  it("tells the operator which client address the API sees, so the proxy setting can be checked after deploy", async () => {
+    const s = (await h.client().request("GET", "/status")).body;
+    expect(typeof s.requestIp).toBe("string");
+    expect(s.requestIp.length).toBeGreaterThan(0);
   });
 });
 

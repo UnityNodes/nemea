@@ -43,11 +43,22 @@ describe("credit estimator", () => {
 });
 
 describe("cadence planner", () => {
-  it("keeps the desired cadence when the plan is big enough", () => {
-    const plan = planCadence(300_000, small);
+  it("keeps the desired cadence when the plan is big enough and there are many coins, where tiers really save calls", () => {
+    const many = Array.from({ length: 150 }, (_, i) => 10_000 + i);
+    const workload = { stablecoinIds: [825], topIds: many.slice(0, 50), smallIds: many.slice(50) };
+    const plan = planCadence(450_000, workload);
     expect(plan.verdict).toBe("fits");
     expect(plan.multiplier).toBe(1);
     expect(plan.cadence).toEqual(DESIRED_CADENCE);
+  });
+
+  it("polls every coin every minute on a big plan when there are few coins, because that costs the same as polling only stablecoins", () => {
+    const plan = planCadence(300_000, small);
+    expect(plan.verdict).toBe("fits");
+    expect(plan.cadence.stablecoinsSec).toBe(60);
+    expect(plan.cadence.topSec).toBe(60);
+    expect(plan.cadence.smallSec).toBe(60);
+    expect(plan.estimatedCreditsPerMonth).toBe(43_200 + 2_880 + 1_440);
   });
 
   it("stretches the cadence on a 10k plan instead of pretending one-minute polling fits", () => {
@@ -77,7 +88,7 @@ describe("cadence planner", () => {
     expect(est.perMonth).toBe(stableCalls + globalCalls + categoryCalls);
   });
 
-  it("keeps real tiers when there are more than a hundred distinct coins, because then each tier costs calls", () => {
+  it("keeps real tiers when there are more than a hundred distinct coins, because then each tier costs calls (stretched plan)", () => {
     const many = Array.from({ length: 150 }, (_, i) => 10_000 + i);
     const plan = planCadence(450_000, { stablecoinIds: [825], topIds: many.slice(0, 50), smallIds: many.slice(50) });
     expect(plan.verdict).toBe("fits");

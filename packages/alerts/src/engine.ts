@@ -30,6 +30,12 @@ export const COOLDOWN_MS: Record<AlertKind, number> = {
 };
 
 export const CRITICAL_PER_DAY_CAP = 3;
+export const MAX_MARKET_CONTEXT_AGE_MS = 2 * HOUR;
+
+function isFresh(fetchedAt: string, now: Date, maxAgeMs: number): boolean {
+  const t = Date.parse(fetchedAt);
+  return Number.isFinite(t) && now.getTime() - t <= maxAgeMs;
+}
 
 const WEEK = 7 * DAY;
 
@@ -52,7 +58,13 @@ function latestFor(past: readonly PastAlert[], dedupeKey: string): PastAlert | n
   return latest;
 }
 
-export function evaluate(input: EngineInput): EngineOutput {
+export function evaluate(raw: EngineInput): EngineOutput {
+  const maxContextAge = raw.maxMarketContextAgeMs ?? MAX_MARKET_CONTEXT_AGE_MS;
+  const input: EngineInput = {
+    ...raw,
+    global: raw.global && isFresh(raw.global.fetchedAt, raw.now, maxContextAge) ? raw.global : null,
+    categories: raw.categories.filter((c) => isFresh(c.fetchedAt, raw.now, maxContextAge)),
+  };
   const suppressed: Suppressed[] = [];
   const rows = priceRows(input.holdings, input.quotes);
   const freshQuotes = new Map<number, QuoteSnapshot>();
@@ -74,8 +86,8 @@ export function evaluate(input: EngineInput): EngineOutput {
     freshQuotes.set(id, quote);
   }
 
-  const ctx = buildRuleContext(input, rows, freshQuotes);
-  let candidates: Candidate[] = [
+  const ctx = buildRuleContext(input, rows, freshQuotes, stale + unpriced > 0);
+  const candidates: Candidate[] = [
     ...priceDropRules(ctx),
     ...costBasisRules(ctx),
     ...nearLowRules(ctx),
@@ -85,26 +97,13 @@ export function evaluate(input: EngineInput): EngineOutput {
     ...portfolioRules(ctx),
   ];
 
-  const hasPortfolio = candidates.some((c) => c.kind === "portfolio_drop");
-  if (hasPortfolio) {
-    const kept: Candidate[] = [];
-    for (const c of candidates) {
-      const isTokenDrop = c.kind === "price_drop_1h" || c.kind === "price_drop_24h";
-      if (isTokenDrop && c.severity !== "critical") {
-        suppressed.push({ kind: c.kind, cmcId: c.cmcId, reason: "rolled_into_portfolio_alert", detail: "covered by the portfolio-level alert" });
-        continue;
-      }
-      kept.push(c);
-    }
-    candidates = kept;
-  }
-
   const now = input.now.getTime();
   const afterCooldown: Candidate[] = [];
   for (const c of candidates) {
     const last = latestFor(input.past, c.dedupeKey);
     if (last) {
-      const within = now - Date.parse(last.createdAt) < COOLDOWN_MS[c.kind];
+      const window = Math.max(COOLDOWN_MS[c.kind], COOLDOWN_MS[last.kind]);
+      const within = now - Date.parse(last.createdAt) < window;
       const escalates = rank(c.severity) > rank(last.severity);
       if (within && !escalates) {
         suppressed.push({ kind: c.kind, cmcId: c.cmcId, reason: "cooldown", detail: `already alerted ${new Date(last.createdAt).toISOString()}` });
@@ -114,12 +113,23 @@ export function evaluate(input: EngineInput): EngineOutput {
     afterCooldown.push(c);
   }
 
+  const hasPortfolio = afterCooldown.some((c) => c.kind === "portfolio_drop");
+  const surviving: Candidate[] = [];
+  for (const c of afterCooldown) {
+    const isTokenDrop = c.kind === "price_drop_1h" || c.kind === "price_drop_24h";
+    if (hasPortfolio && isTokenDrop && c.severity !== "critical") {
+      suppressed.push({ kind: c.kind, cmcId: c.cmcId, reason: "rolled_into_portfolio_alert", detail: "covered by the portfolio-level alert" });
+      continue;
+    }
+    surviving.push(c);
+  }
+
   const sent = input.past.filter((p) => !p.simulated);
   const criticalToday = sent.filter((p) => p.severity === "critical" && now - Date.parse(p.createdAt) < DAY).length;
   const nonCriticalWeek = sent.filter((p) => p.severity !== "critical" && now - Date.parse(p.createdAt) < WEEK).length;
 
-  const critical = afterCooldown.filter((c) => c.severity === "critical").sort((a, b) => b.score - a.score);
-  const rest = afterCooldown.filter((c) => c.severity !== "critical").sort((a, b) => b.score - a.score);
+  const critical = surviving.filter((c) => c.severity === "critical").sort((a, b) => b.score - a.score);
+  const rest = surviving.filter((c) => c.severity !== "critical").sort((a, b) => b.score - a.score);
 
   const emit: Candidate[] = [];
   let criticalBudget = Math.max(0, CRITICAL_PER_DAY_CAP - criticalToday);

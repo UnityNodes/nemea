@@ -65,7 +65,7 @@ function json(body: unknown, status = 200): Response {
 export function createFakeCmc(opts: { now?: () => Date } = {}): FakeCmc {
   const now = opts.now ?? (() => new Date());
   const state = new Map(coins().map((c) => [c.id, c]));
-  const categories = new Map<string, number>([["Layer 1", -1.5], ["DeFi", -1.0], ["Stablecoins", 0], ["Oracle", -1.8]]);
+  const categories = new Map<string, number>([["Layer 1", -1.5], ["DeFi", -1.0], ["Stablecoin", 0], ["Oracles", -1.8]]);
   const histories = new Map<number, number[]>();
   const plan = { creditLimitMonthly: 450_000, rateLimitPerMinute: 600, historical: true, priceStats: false };
   let marketChange = -1.1;
@@ -134,6 +134,7 @@ export function createFakeCmc(opts: { now?: () => Date } = {}): FakeCmc {
     slug: c.slug,
     category: c.contracts.length > 0 || c.tags.includes("stablecoin") ? "token" : "coin",
     tags: c.tags,
+    "tag-groups": c.tags.map((t) => (["layer-1", "smart-contracts", "defi", "oracles", "stablecoin", "memes"].includes(t) ? "CATEGORY" : "ALGORITHM")),
     date_added: "2013-04-28T00:00:00.000Z",
     contract_address: c.contracts.map((k) => ({ contract_address: k.address, platform: { name: k.platform } })),
   });

@@ -39,6 +39,7 @@ export type EngineInput = {
   lows: ReadonlyMap<number, PriceLow>;
   past: readonly PastAlert[];
   maxQuoteAgeMs: number;
+  maxMarketContextAgeMs?: number;
 };
 
 export type AlertContext = {
@@ -84,6 +85,7 @@ export type CategoryContribution = {
   sharePct: number;
   categoryChange24hPct: number | null;
   symbols: string[];
+  cmcIds: number[];
 };
 
 export type DropAttribution = {

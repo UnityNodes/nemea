@@ -83,10 +83,22 @@ export function authRoutes(deps: AppDeps): Router {
     if (owner) {
       user = owner;
     } else if (sessionUser && sessionUser.kind === "guest") {
-      await deps.repo.attachWallet(sessionUser.id, address);
-      user = (await deps.repo.userById(sessionUser.id)) as UserRow;
+      try {
+        await deps.repo.attachWallet(sessionUser.id, address);
+        user = (await deps.repo.userById(sessionUser.id)) as UserRow;
+      } catch (error) {
+        const winner = await deps.repo.userByWallet(address);
+        if (!winner) throw error;
+        user = winner;
+      }
     } else {
-      user = await deps.repo.createUser("wallet", address);
+      try {
+        user = await deps.repo.createUser("wallet", address);
+      } catch (error) {
+        const winner = await deps.repo.userByWallet(address);
+        if (!winner) throw error;
+        user = winner;
+      }
     }
     await deps.sessions.issue(res, user.id);
     res.json(await meView(deps, user));

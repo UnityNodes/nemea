@@ -85,7 +85,7 @@ export function alertRoutes(deps: AppDeps): Router {
     const ids = [...new Set([...holdings.map((h) => h.cmcId), ...PEGGED_IDS])];
     const [meta, quotes, categories] = await Promise.all([deps.market.ensureMeta([...PEGGED_IDS, ...holdings.map((h) => h.cmcId)]), deps.market.quotesFor(ids), deps.market.categories()]);
     const stableTargets = STABLE_ORDER.map((id) => meta.get(id)).filter((m): m is NonNullable<typeof m> => !!m);
-    res.json(buildActions({ alert: { kind: row.kind as never, cmcId: row.cmcId, context: row.context }, holdings, meta, quotes, categories, preferences: user.preferences, stableTargets, peggedUsdIds: PEGGED_IDS, fraction }));
+    res.json(buildActions({ alert: { kind: row.kind as never, cmcId: row.cmcId, context: row.context }, holdings, meta, quotes, categories, preferences: user.preferences, stableTargets, peggedUsdIds: PEGGED_IDS, fraction, now: deps.now(), maxQuoteAgeMs: deps.maxQuoteAgeMs() }));
   });
 
   return r;

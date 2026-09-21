@@ -1,3 +1,5 @@
+const MAX_ENTRIES = 500;
+
 export type CacheStats = { hits: number; misses: number; coalesced: number };
 
 type Entry<T> = { value: T; expiresAt: number };
@@ -25,6 +27,7 @@ export class TtlCache {
       (value) => {
         this.entries.set(key, { value, expiresAt: this.now() + ttlMs });
         this.inflight.delete(key);
+        if (this.entries.size > MAX_ENTRIES) this.sweep();
         return value;
       },
       (error) => {
@@ -39,6 +42,15 @@ export class TtlCache {
   peek<T>(key: string): T | undefined {
     const hit = this.entries.get(key) as Entry<T> | undefined;
     return hit && hit.expiresAt > this.now() ? hit.value : undefined;
+  }
+
+  private sweep(): void {
+    const t = this.now();
+    for (const [key, entry] of this.entries) if (entry.expiresAt <= t) this.entries.delete(key);
+  }
+
+  size(): number {
+    return this.entries.size;
   }
 
   invalidate(prefix: string): void {

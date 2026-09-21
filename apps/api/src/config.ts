@@ -18,6 +18,7 @@ const EnvSchema = z.object({
   TELEGRAM_BOT_TOKEN: optionalString,
   TELEGRAM_BOT_USERNAME: optionalString,
   ADMIN_TELEGRAM_CHAT_ID: optionalString,
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
   ETHERSCAN_API_KEY: optionalString,
   RESEND_API_KEY: optionalString,
   EMAIL_FROM: optionalString,

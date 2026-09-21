@@ -72,15 +72,28 @@ export function tierHoldings(rows: readonly Row[]): Map<number, "top" | "small">
 }
 
 export function normalizeTag(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/s$/, "");
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+export const NON_THEMATIC_CATEGORY =
+  /(portfolio|bankruptcy estate|^sec\/cftc|^alleged sec|strategic crypto reserve|^made in (america|china)$|^cmc |(capital|fund|group)$|^jump crypto$|^2017\/18 alt season$|ecosystem|launchpad|launchpool)/i;
+
+export function isThematicCategory(name: string): boolean {
+  return !NON_THEMATIC_CATEGORY.test(name.trim());
 }
 
 export function categoryFor(meta: TokenMeta | undefined, categories: readonly CategorySnapshot[]): CategorySnapshot | null {
   if (!meta) return null;
   const byKey = new Map<string, CategorySnapshot>();
-  for (const c of categories) byKey.set(normalizeTag(c.name), c);
-  for (const tag of meta.tags) {
-    const hit = byKey.get(normalizeTag(tag));
+  for (const c of categories) {
+    if (!isThematicCategory(c.name)) continue;
+    const key = normalizeTag(c.name);
+    if (!byKey.has(key)) byKey.set(key, c);
+  }
+  for (let i = 0; i < meta.tags.length; i++) {
+    const group = meta.tagGroups?.[i];
+    if (group === "PLATFORM") continue;
+    const hit = byKey.get(normalizeTag(meta.tags[i] as string));
     if (hit) return hit;
   }
   return null;
@@ -94,7 +107,7 @@ export function attributeDrop(
 ): DropAttribution | null {
   const change = portfolioChange24h(rows);
   if (!change) return null;
-  const groups = new Map<string, { loss: number; category: CategorySnapshot | null; symbols: Set<string> }>();
+  const groups = new Map<string, { loss: number; category: CategorySnapshot | null; symbols: Set<string>; ids: Set<number> }>();
   let totalLoss = 0;
   for (const r of rows) {
     const pct = r.quote?.percentChange24h;
@@ -103,9 +116,10 @@ export function attributeDrop(
     if (loss >= 0) continue;
     const category = categoryFor(meta.get(r.holding.cmcId), categories);
     const key = category?.name ?? "Other";
-    const g = groups.get(key) ?? { loss: 0, category, symbols: new Set<string>() };
+    const g = groups.get(key) ?? { loss: 0, category, symbols: new Set<string>(), ids: new Set<number>() };
     g.loss += -loss;
     g.symbols.add(r.holding.symbol);
+    g.ids.add(r.holding.cmcId);
     groups.set(key, g);
     totalLoss += -loss;
   }
@@ -116,6 +130,7 @@ export function attributeDrop(
       sharePct: totalLoss > 0 ? (g.loss / totalLoss) * 100 : 0,
       categoryChange24hPct: g.category?.avgPriceChange24hPct ?? null,
       symbols: [...g.symbols].sort(),
+      cmcIds: [...g.ids],
     }))
     .sort((a, b) => b.lossUsd - a.lossUsd);
   return {

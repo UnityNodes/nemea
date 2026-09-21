@@ -18,14 +18,29 @@ export type ActionInput = {
   stableTargets: readonly TokenMeta[];
   peggedUsdIds: ReadonlySet<number>;
   fraction: number;
+  now?: Date;
+  maxQuoteAgeMs?: number;
 };
+
+const EVM_ADDRESS = /^0x[a-fA-F0-9]{40}$/;
+
+function formatAmount(amount: number): string {
+  return String(Number(amount.toPrecision(8)));
+}
+
+function quoteIsFresh(quote: QuoteSnapshot | undefined, input: ActionInput): boolean {
+  if (!quote || quote.priceUsd === null) return false;
+  if (!input.now || input.maxQuoteAgeMs === undefined) return true;
+  const t = Date.parse(quote.cmcLastUpdated ?? quote.fetchedAt);
+  return Number.isFinite(t) && input.now.getTime() - t <= input.maxQuoteAgeMs;
+}
 
 function uniswapUrl(chain: Chain, from: string | null, to: string, amount: number): string {
   const url = new URL("https://app.uniswap.org/swap");
   url.searchParams.set("chain", chain);
   url.searchParams.set("inputCurrency", from ?? "ETH");
   url.searchParams.set("outputCurrency", to);
-  url.searchParams.set("exactAmount", String(amount));
+  url.searchParams.set("exactAmount", formatAmount(amount));
   url.searchParams.set("exactField", "input");
   return url.toString();
 }
@@ -35,19 +50,22 @@ function oneInchUrl(chain: Chain, from: string | null, to: string): string {
 }
 
 function chainsFor(holding: Holding, meta: TokenMeta | undefined): Array<{ chain: Chain; address: string | null }> {
-  if (holding.chain) return [{ chain: holding.chain, address: holding.contractAddress }];
+  if (holding.chain) {
+    if (holding.contractAddress !== null && !EVM_ADDRESS.test(holding.contractAddress)) return [];
+    return [{ chain: holding.chain, address: holding.contractAddress }];
+  }
   if (holding.cmcId === NATIVE_CMC_ID) return CHAINS.map((chain) => ({ chain, address: null }));
-  return (meta?.contracts ?? []).map((c) => ({ chain: c.chain, address: c.address }));
+  return (meta?.contracts ?? []).filter((c) => EVM_ADDRESS.test(c.address)).map((c) => ({ chain: c.chain, address: c.address }));
 }
 
 function pickTarget(chain: Chain, excludeId: number, input: ActionInput): { meta: TokenMeta; address: string } | null {
   const floor = input.preferences.depegFloorUsd;
   for (const target of input.stableTargets) {
     if (target.cmcId === excludeId) continue;
-    const price = input.quotes.get(target.cmcId)?.priceUsd ?? null;
-    if (price === null || price < floor) continue;
+    const quote = input.quotes.get(target.cmcId);
+    if (!quoteIsFresh(quote, input) || (quote?.priceUsd as number) < floor) continue;
     const contract = target.contracts.find((c) => c.chain === chain);
-    if (contract) return { meta: target, address: contract.address };
+    if (contract && EVM_ADDRESS.test(contract.address)) return { meta: target, address: contract.address };
   }
   return null;
 }
@@ -65,8 +83,8 @@ export function selectActionHoldings(input: ActionInput): Holding[] {
       .slice(0, MAX_SUGGESTIONS);
   }
   if (alert.kind === "portfolio_drop") {
-    const symbols = new Set((alert.context.attribution?.byCategory ?? []).flatMap((c) => c.symbols));
-    const pool = symbols.size > 0 ? nonStable.filter((h) => symbols.has(h.symbol)) : nonStable;
+    const ids = new Set((alert.context.attribution?.byCategory ?? []).flatMap((c) => c.cmcIds ?? []));
+    const pool = ids.size > 0 ? nonStable.filter((h) => ids.has(h.cmcId)) : nonStable;
     return pool.sort((a, b) => value(b) - value(a)).slice(0, MAX_SUGGESTIONS);
   }
   return [];

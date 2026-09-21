@@ -10,6 +10,7 @@ export type RuleContext = {
   freshQuotes: Map<number, QuoteSnapshot>;
   change: PortfolioChange | null;
   attribution: DropAttribution | null;
+  incomplete: boolean;
 };
 
 export const SEVERITY_WEIGHT = { critical: 100, warning: 50, info: 10 } as const;
@@ -44,15 +45,20 @@ function positionFacts(row: Row, ctx: RuleContext): AlertFact[] {
 }
 
 function heldRows(ctx: RuleContext): Array<{ row: Row; quote: QuoteSnapshot }> {
-  const seen = new Set<number>();
-  const out: Array<{ row: Row; quote: QuoteSnapshot }> = [];
+  const merged = new Map<number, { row: Row; quote: QuoteSnapshot }>();
   for (const row of ctx.rows) {
     const quote = ctx.freshQuotes.get(row.holding.cmcId);
-    if (!quote || seen.has(row.holding.cmcId)) continue;
-    seen.add(row.holding.cmcId);
-    out.push({ row, quote });
+    if (!quote) continue;
+    const seen = merged.get(row.holding.cmcId);
+    if (!seen) {
+      merged.set(row.holding.cmcId, { row: { ...row, holding: { ...row.holding } }, quote });
+      continue;
+    }
+    seen.row.holding.amount += row.holding.amount;
+    seen.row.valueUsd = (seen.row.valueUsd ?? 0) + (row.valueUsd ?? 0);
+    if (seen.row.holding.costBasisUsd === null) seen.row.holding.costBasisUsd = row.holding.costBasisUsd;
   }
-  return out;
+  return [...merged.values()];
 }
 
 function priorPrice(quote: QuoteSnapshot, changePct: number | null): number | null {
@@ -95,7 +101,7 @@ export function priceDropRules(ctx: RuleContext): Candidate[] {
       title: `${row.holding.symbol} is down ${pctAbs(change)} in the last ${window}`,
       summary: `${quote.name} moved from about ${before !== null ? usd(before) : "its earlier price"} to ${usd(quote.priceUsd)}. Nothing has happened to your coins — this is the market price only.`,
       facts,
-      dedupeKey: `${kind}:${row.holding.cmcId}`,
+      dedupeKey: `price_drop:${row.holding.cmcId}`,
       score: score(severity, change, share),
       context: baseContext(row.holding.cmcId, { change1hPct: d1, change24hPct: d24, priceUsd: quote.priceUsd, thresholdPct: threshold }, ctx, category?.name ?? null, category?.avgPriceChange24hPct ?? null),
     });
@@ -105,14 +111,18 @@ export function priceDropRules(ctx: RuleContext): Candidate[] {
 
 export function costBasisRules(ctx: RuleContext): Candidate[] {
   const out: Candidate[] = [];
-  for (const { row, quote } of heldRows(ctx)) {
+  const done = new Set<number>();
+  for (const row of ctx.rows) {
+    const quote = ctx.freshQuotes.get(row.holding.cmcId);
     const basis = row.holding.costBasisUsd;
-    if (basis === null || quote.priceUsd === null) continue;
+    if (!quote || basis === null || quote.priceUsd === null || done.has(row.holding.cmcId)) continue;
     const before = priorPrice(quote, quote.percentChange24h);
     if (before === null) continue;
     if (!(before >= basis && quote.priceUsd < basis)) continue;
+    done.add(row.holding.cmcId);
     const below = (1 - quote.priceUsd / basis) * 100;
     const share = valueShare(ctx.rows, row.holding.cmcId);
+    const total = ctx.rows.filter((r) => r.holding.cmcId === row.holding.cmcId).reduce((sum, r) => sum + r.holding.amount, 0);
     out.push({
       kind: "below_cost_basis",
       severity: "warning",
@@ -124,7 +134,7 @@ export function costBasisRules(ctx: RuleContext): Candidate[] {
         { label: "Your cost basis", value: usd(basis) },
         { label: "Price now", value: usd(quote.priceUsd) },
         { label: "Below entry", value: pctAbs(below) },
-        ...positionFacts(row, ctx),
+        { label: "You hold", value: `${total} ${row.holding.symbol}` },
       ],
       dedupeKey: `below_cost_basis:${row.holding.cmcId}`,
       score: score("warning", below, share),
@@ -304,14 +314,14 @@ function isDiversified(rows: readonly Row[]): boolean {
 export function portfolioRules(ctx: RuleContext): Candidate[] {
   const change = ctx.change;
   const prefs = ctx.input.preferences;
-  if (!change || change.coveragePct < MIN_PORTFOLIO_COVERAGE_PCT) return [];
+  if (!change || ctx.incomplete || change.coveragePct < MIN_PORTFOLIO_COVERAGE_PCT) return [];
   if (!isDiversified(ctx.rows)) return [];
   if (change.changePct > -prefs.portfolioDropPct) return [];
   const attribution = ctx.attribution;
   const severity = change.changePct <= -prefs.portfolioDropPct * 2 ? "critical" : "warning";
   const top = attribution?.byCategory[0];
   const because = top
-    ? ` About ${top.sharePct.toFixed(0)}% of the drop comes from ${top.categoryName}${top.categoryChange24hPct !== null ? `, which is down ${pctAbs(top.categoryChange24hPct)} on average across CoinMarketCap` : ""}.`
+    ? ` About ${top.sharePct.toFixed(0)}% of the drop comes from ${top.categoryName}${top.categoryChange24hPct !== null && top.categoryChange24hPct < 0 ? `, which is down ${pctAbs(top.categoryChange24hPct)} on average across CoinMarketCap` : ""}.`
     : "";
   const context = baseContext(null, { change24hPct: change.changePct, valueNowUsd: change.valueNowUsd, coveragePct: change.coveragePct }, ctx, top?.categoryName ?? null, top?.categoryChange24hPct ?? null);
   context.attribution = attribution;
@@ -336,7 +346,7 @@ export function portfolioRules(ctx: RuleContext): Candidate[] {
   ];
 }
 
-export function buildRuleContext(input: EngineInput, rows: Row[], freshQuotes: Map<number, QuoteSnapshot>): RuleContext {
+export function buildRuleContext(input: EngineInput, rows: Row[], freshQuotes: Map<number, QuoteSnapshot>, incomplete: boolean): RuleContext {
   const freshRows = rows.map((r) => {
     const q = freshQuotes.get(r.holding.cmcId);
     return q ? r : { ...r, quote: null, valueUsd: null };
@@ -347,5 +357,6 @@ export function buildRuleContext(input: EngineInput, rows: Row[], freshQuotes: M
     freshQuotes,
     change: portfolioChange24h(freshRows),
     attribution: attributeDrop(freshRows, input.meta, input.categories, input.global),
+    incomplete,
   };
 }

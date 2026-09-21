@@ -26,6 +26,12 @@ export function toAlertRecord(row: AlertRow): AlertRecord {
   };
 }
 
+function freshOrNull(quote: QuoteSnapshot | undefined, now: Date, maxAgeMs: number): QuoteSnapshot | null {
+  if (!quote) return null;
+  const t = Date.parse(quote.cmcLastUpdated ?? quote.fetchedAt);
+  return Number.isFinite(t) && now.getTime() - t <= maxAgeMs ? quote : null;
+}
+
 export class Evaluator {
   constructor(
     private readonly repo: Repo,
@@ -33,6 +39,7 @@ export class Evaluator {
     private readonly delivery: DeliveryService,
     private readonly log: (message: string, error?: unknown) => void,
     private readonly now: () => Date = () => new Date(),
+    private readonly maxQuoteAgeMs: () => number = () => MAX_QUOTE_AGE_MS,
   ) {}
 
   async loadInput(user: UserRow): Promise<EngineInput> {
@@ -46,7 +53,7 @@ export class Evaluator {
       this.market.lows(ids),
       this.repo.pastAlerts(user.id, 8),
     ]);
-    return { now: this.now(), holdings, quotes, meta, global, categories, preferences: user.preferences, peggedUsdIds: PEGGED_IDS, lows, past, maxQuoteAgeMs: MAX_QUOTE_AGE_MS };
+    return { now: this.now(), holdings, quotes, meta, global, categories, preferences: user.preferences, peggedUsdIds: PEGGED_IDS, lows, past, maxQuoteAgeMs: this.maxQuoteAgeMs() };
   }
 
   async persist(user: UserRow, emit: readonly Candidate[], simulated: boolean): Promise<AlertRow[]> {
@@ -146,7 +153,7 @@ export class Evaluator {
     const explanation = explain({
       alert: { kind: row.kind as AlertRecord["kind"], severity: row.severity, symbol: row.symbol, title: row.title, facts: row.facts, context: row.context },
       name: row.cmcId !== null ? (meta.get(row.cmcId)?.name ?? row.symbol) : null,
-      quoteNow: row.simulated || row.cmcId === null ? null : (quotes.get(row.cmcId) ?? null),
+      quoteNow: row.simulated || row.cmcId === null ? null : freshOrNull(quotes.get(row.cmcId), this.now(), this.maxQuoteAgeMs()),
       similarDrops: similar,
       pegHistory: peg,
       historyUnavailableReason: unavailable,

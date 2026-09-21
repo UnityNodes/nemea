@@ -33,8 +33,9 @@ export function findSimilarDrops(points: readonly PricePoint[], thresholdPct: nu
     const change = (cur.price / prev.price - 1) * 100;
     if (change > -thresholdPct) continue;
     if (last.t - cur.t < RECENT_EXCLUDE_DAYS * DAY_MS) continue;
-    if (i - lastEventIndex <= MERGE_WITHIN_DAYS) continue;
+    const continuesSlide = i - lastEventIndex <= MERGE_WITHIN_DAYS;
     lastEventIndex = i;
+    if (continuesSlide) continue;
     let recoveredAfterDays: number | null = null;
     for (let j = i + 1; j < pts.length; j++) {
       const later = pts[j] as { t: number; price: number };

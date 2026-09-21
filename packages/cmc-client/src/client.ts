@@ -105,7 +105,7 @@ export class CmcClient {
   private readonly timeoutMs: number;
   private readonly ttl: typeof DEFAULT_TTL_MS;
   private readonly cache: TtlCache;
-  private limiter: SlidingWindowLimiter;
+  private readonly limiter: SlidingWindowLimiter;
   private readonly limiterWaitMs: number;
   private readonly counters: ClientCounters = { requests: 0, creditsSpent: 0, rateLimited: 0, planRestricted: 0, failed: 0 };
   private readonly receipts: CallReceipt[] = [];
@@ -123,7 +123,7 @@ export class CmcClient {
   }
 
   setRequestsPerMinute(perMinute: number): void {
-    this.limiter = new SlidingWindowLimiter(perMinute, this.limiterWaitMs, this.now);
+    this.limiter.setPerMinute(perMinute);
   }
 
   stats(): { cache: CacheStats; counters: ClientCounters; requestsInLastMinute: number } {
@@ -160,7 +160,16 @@ export class CmcClient {
       throw new CmcHttpError(`CMC ${path} network error: ${error instanceof Error ? error.message : String(error)}`);
     }
     let body: unknown = null;
-    const text = await res.text();
+    let text: string;
+    try {
+      text = await res.text();
+    } catch (error) {
+      this.counters.failed += 1;
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      this.record({ at: stamp, endpoint: path, httpStatus: res.status, ok: false, creditCount: null, ms: this.now() - started, detail: timedOut ? "timeout while reading the body" : "connection lost while reading the body" });
+      if (timedOut) throw new CmcTimeoutError(path, this.timeoutMs);
+      throw new CmcHttpError(`CMC ${path} connection failed while reading the response: ${error instanceof Error ? error.message : String(error)}`, res.status);
+    }
     try {
       body = text ? JSON.parse(text) : null;
     } catch {
@@ -271,7 +280,7 @@ export class CmcClient {
     const bucket = 3600_000;
     const alignedEnd = Math.floor(end / bucket) * bucket;
     const start = alignedEnd - opts.days * 24 * 3600_000 + 2 * 3600_000;
-    return this.cache.getOrLoad(`hist:${id}:${opts.days}:${opts.interval}:${alignedEnd}`, this.ttl.historical, async () => {
+    return this.cache.getOrLoad(`hist:${id}:${opts.days}:${opts.interval}`, this.ttl.historical, async () => {
       const body = await this.call(ENDPOINTS.quotesHistorical, {
         id,
         time_start: new Date(start).toISOString(),

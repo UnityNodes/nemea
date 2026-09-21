@@ -15,6 +15,7 @@ const LOWS_PER_RUN = 3;
 const PAUSE_ON_QUOTA_MS = 30 * 60_000;
 const DIGEST_HOUR_UTC = 8;
 const LOW_CREDITS_FRACTION = 0.15;
+const MIN_QUOTE_AGE_MS = 30 * 60_000;
 
 type LaneName = PollLaneStatus["lane"];
 
@@ -63,6 +64,12 @@ export class Poller {
       return { lane, intervalSeconds: interval[lane], lastSuccessAt: s?.lastSuccessAt?.toISOString() ?? null, lastError: s?.lastError ?? null, itemCount: s?.itemCount ?? 0 };
     });
     return { plan: this.plan, creditLimitMonthly: this.creditLimit, lanes, pausedUntil: this.pausedUntil > this.now().getTime() ? new Date(this.pausedUntil).toISOString() : null, ticks: this.tickCount };
+  }
+
+  maxQuoteAgeMs(): number {
+    const c = this.plan?.cadence;
+    if (!c) return MIN_QUOTE_AGE_MS;
+    return Math.max(MIN_QUOTE_AGE_MS, 2 * Math.max(c.stablecoinsSec, c.topSec, c.smallSec) * 1000);
   }
 
   start(): void {

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { SystemStatus } from "@nemea/shared-types";
 import type { AppDeps } from "../app.ts";
+import { clientIp } from "../http.ts";
 
 const VERSION = "0.1.0";
 
@@ -17,7 +18,7 @@ export function statusRoutes(deps: AppDeps): Router {
     }
   });
 
-  r.get("/status", async (_req, res) => {
+  r.get("/status", async (req, res) => {
     const stats = deps.market.cmc.stats();
     const poll = deps.poller?.status() ?? null;
     let rateLimit: number | null = null;
@@ -43,6 +44,7 @@ export function statusRoutes(deps: AppDeps): Router {
       lanes: poll?.lanes ?? [],
       cache: { hits: stats.cache.hits, misses: stats.cache.misses },
       version: VERSION,
+      requestIp: clientIp(req),
     };
     res.json(body);
   });

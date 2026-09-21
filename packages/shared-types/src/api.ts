@@ -80,10 +80,13 @@ export const WalletImportPreview = z.object({
 });
 export type WalletImportPreview = z.infer<typeof WalletImportPreview>;
 
-export const WalletImportConfirm = z.object({
-  address: EvmAddress,
-  items: z.array(WalletImportItem).min(1),
-});
+export const WalletImportConfirm = z
+  .object({
+    address: EvmAddress,
+    chains: z.array(Chain).min(1).optional(),
+    items: z.array(WalletImportItem),
+  })
+  .refine((v) => v.items.length > 0 || (v.chains?.length ?? 0) > 0, { message: "nothing to import" });
 export type WalletImportConfirm = z.infer<typeof WalletImportConfirm>;
 
 export const PreferencesUpdate = AlertPreferences.partial();
@@ -195,6 +198,7 @@ export type SystemStatus = {
   lanes: PollLaneStatus[];
   cache: { hits: number; misses: number };
   version: string;
+  requestIp: string;
 };
 
 export type ApiError = { error: { code: string; message: string } };

@@ -3,9 +3,9 @@ import { tierHoldings, priceRows, totalValue, portfolioChange24h } from "@nemea/
 import { AlertPreferences, HoldingInput, PreferencesUpdate, WalletImportConfirm, WalletImportRequest, type PortfolioView, type PricedHoldingView, type TokenLookupCandidate } from "@nemea/shared-types";
 import { z } from "zod";
 import { limiter, requireUser, type AppDeps, type AuthedRequest } from "../app.ts";
-import { MAX_QUOTE_AGE_MS, SAMPLE_PORTFOLIO } from "../config.ts";
+import { SAMPLE_PORTFOLIO } from "../config.ts";
 import { HttpError, parseBody } from "../http.ts";
-import type { UserRow } from "../services/repo.ts";
+import { HoldingLimitError, type UserRow } from "../services/repo.ts";
 
 const MAX_HOLDINGS = 100;
 
@@ -33,7 +33,7 @@ export async function portfolioView(deps: AppDeps, user: UserRow, refresh: boole
       percentChange1h: q?.percentChange1h ?? null,
       percentChange24h: q?.percentChange24h ?? null,
       quoteAgeSeconds: ageMs !== null && Number.isFinite(ageMs) ? Math.max(0, Math.round(ageMs / 1000)) : null,
-      quoteStale: ageMs === null || !Number.isFinite(ageMs) || ageMs > MAX_QUOTE_AGE_MS,
+      quoteStale: ageMs === null || !Number.isFinite(ageMs) || ageMs > deps.maxQuoteAgeMs(),
       tier: tiers.get(row.holding.cmcId) ?? "small",
       costBasisDeltaPct: q?.priceUsd != null && row.holding.costBasisUsd ? (q.priceUsd / row.holding.costBasisUsd - 1) * 100 : null,
     };
@@ -50,7 +50,18 @@ export async function portfolioView(deps: AppDeps, user: UserRow, refresh: boole
   };
 }
 
-const PatchBody = z.object({ amount: z.number().positive().finite().optional(), costBasisUsd: z.number().positive().finite().nullable().optional() });
+const PatchBody = z
+  .object({ amount: z.number().positive().finite().optional(), costBasisUsd: z.number().positive().finite().nullable().optional() })
+  .refine((v) => v.amount !== undefined || v.costBasisUsd !== undefined, { message: "nothing to change" });
+
+async function addWithinLimit<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (error instanceof HoldingLimitError) throw new HttpError(400, "too_many_holdings", error.message);
+    throw error;
+  }
+}
 const LookupQuery = z.object({ symbol: z.string().trim().min(1).max(20) });
 
 export function portfolioRoutes(deps: AppDeps): Router {
@@ -61,6 +72,8 @@ export function portfolioRoutes(deps: AppDeps): Router {
   const lookupLimit = limiter(20, 60_000, userKey, now);
   const walletLimit = limiter(6, 60_000, userKey, now);
   const lookupGlobal = limiter(600, 3600_000, () => "global", now);
+  const writeLimit = limiter(30, 60_000, userKey, now);
+  const metaGlobal = limiter(600, 3600_000, () => "global", now);
   const walletGlobal = limiter(120, 3600_000, () => "global", now);
 
   r.get("/portfolio", auth, async (req, res) => {
@@ -91,14 +104,13 @@ export function portfolioRoutes(deps: AppDeps): Router {
     res.json({ candidates });
   });
 
-  r.post("/portfolio/holdings", auth, async (req, res) => {
+  r.post("/portfolio/holdings", auth, writeLimit, metaGlobal, async (req, res) => {
     const user = (req as AuthedRequest).user;
     const input = parseBody(HoldingInput, req.body);
-    if ((await deps.repo.countHoldings(user.id)) >= MAX_HOLDINGS) throw new HttpError(400, "too_many_holdings", `A portfolio can hold at most ${MAX_HOLDINGS} coins`);
     if (await deps.repo.findManualHolding(user.id, input.cmcId)) throw new HttpError(409, "already_added", "You already added this coin. Edit its amount instead.");
     const meta = (await deps.market.ensureMeta([input.cmcId])).get(input.cmcId);
     if (!meta) throw new HttpError(404, "unknown_token", "CoinMarketCap does not know this coin id");
-    const holding = await deps.repo.addHolding(user.id, { cmcId: meta.cmcId, symbol: meta.symbol, name: meta.name, amount: input.amount, costBasisUsd: input.costBasisUsd ?? null, source: "manual", chain: null, contractAddress: null, walletAddress: null });
+    const holding = await addWithinLimit(() => deps.repo.addHolding(user.id, { cmcId: meta.cmcId, symbol: meta.symbol, name: meta.name, amount: input.amount, costBasisUsd: input.costBasisUsd ?? null, source: "manual", chain: null, contractAddress: null, walletAddress: null }, MAX_HOLDINGS));
     try {
       await deps.market.ensureQuotes([meta.cmcId], 120_000);
     } catch (error) {
@@ -121,7 +133,7 @@ export function portfolioRoutes(deps: AppDeps): Router {
     res.json({ portfolio: await portfolioView(deps, user, false) });
   });
 
-  r.post("/portfolio/sample", auth, async (req, res) => {
+  r.post("/portfolio/sample", auth, writeLimit, metaGlobal, async (req, res) => {
     const user = (req as AuthedRequest).user;
     if ((await deps.repo.countHoldings(user.id)) > 0) throw new HttpError(409, "not_empty", "The sample portfolio can only be loaded into an empty portfolio");
     const metas = await deps.market.ensureMeta(SAMPLE_PORTFOLIO.map((s) => s.cmcId));
@@ -129,7 +141,7 @@ export function portfolioRoutes(deps: AppDeps): Router {
     if (missing.length > 0) throw new HttpError(502, "sample_unavailable", `CoinMarketCap did not return metadata for ids ${missing.join(", ")}`);
     for (const s of SAMPLE_PORTFOLIO) {
       const m = metas.get(s.cmcId)!;
-      await deps.repo.addHolding(user.id, { cmcId: m.cmcId, symbol: m.symbol, name: m.name, amount: s.amount, costBasisUsd: s.costBasisUsd, source: "manual", chain: null, contractAddress: null, walletAddress: null });
+      await addWithinLimit(() => deps.repo.addHolding(user.id, { cmcId: m.cmcId, symbol: m.symbol, name: m.name, amount: s.amount, costBasisUsd: s.costBasisUsd, source: "manual", chain: null, contractAddress: null, walletAddress: null }, MAX_HOLDINGS));
     }
     try {
       await deps.market.ensureQuotes(SAMPLE_PORTFOLIO.map((s) => s.cmcId), 120_000);
@@ -144,21 +156,22 @@ export function portfolioRoutes(deps: AppDeps): Router {
     res.json(await deps.walletReader(address, [...new Set(chains)]));
   });
 
-  r.post("/portfolio/import-wallet/confirm", auth, walletLimit, async (req, res) => {
+  r.post("/portfolio/import-wallet/confirm", auth, walletLimit, metaGlobal, async (req, res) => {
     const user = (req as AuthedRequest).user;
-    const { address, items } = parseBody(WalletImportConfirm, req.body);
+    const { address, items, chains: requestedChains } = parseBody(WalletImportConfirm, req.body);
+    if (items.length > MAX_HOLDINGS) throw new HttpError(400, "too_many_holdings", `At most ${MAX_HOLDINGS} coins can be imported at once`);
     const ids = [...new Set(items.map((i) => i.cmcId))];
     const metas = await deps.market.ensureMeta(ids);
     const unknown = ids.filter((id) => !metas.has(id));
     if (unknown.length > 0) throw new HttpError(400, "unknown_token", `CoinMarketCap does not know ids ${unknown.join(", ")}`);
-    if (items.length > MAX_HOLDINGS) throw new HttpError(400, "too_many_holdings", `At most ${MAX_HOLDINGS} coins can be imported at once`);
-    const chains = [...new Set(items.map((i) => i.chain))];
-    await deps.repo.replaceWalletHoldings(
+    const chains = requestedChains ? [...new Set(requestedChains)] : [...new Set(items.map((i) => i.chain))];
+    await addWithinLimit(() => deps.repo.replaceWalletHoldings(
       user.id,
       address,
       chains,
       items.map((i) => ({ cmcId: i.cmcId, symbol: metas.get(i.cmcId)!.symbol, name: metas.get(i.cmcId)!.name, amount: i.amount, costBasisUsd: null, source: "wallet" as const, chain: i.chain, contractAddress: i.contractAddress, walletAddress: address.toLowerCase() })),
-    );
+      MAX_HOLDINGS,
+    ));
     try {
       await deps.market.ensureQuotes(ids, 120_000);
     } catch (error) {

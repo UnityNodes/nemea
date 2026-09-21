@@ -74,33 +74,46 @@ function dropHistory(input: ExplainInput, symbol: string, thresholdPct: number):
   };
 }
 
-function wherePriceDropCame(c: AlertContext, symbol: string, name: string): ExplainSection {
+function wherePriceDropCame(c: AlertContext, symbol: string, name: string, isHour: boolean): ExplainSection {
+  const heading = "Is it just this coin, or everyone?";
   const coin = num(c.observed.change24hPct);
   const market = c.marketChange24hPct;
   const cat = c.categoryChange24hPct;
+  if (isHour && (coin === null || coin > -3)) {
+    return {
+      heading,
+      body: `This is a fast move: ${symbol} fell within the last hour, and over the full day it is ${coin === null ? "not yet clear" : pct(coin)}. CoinMarketCap's market-wide and group numbers are 24-hour figures, so they cannot tell us yet whether the rest of the market moved too. A sharp one-hour fall that has not shown up in the daily numbers is worth watching rather than reacting to.`,
+    };
+  }
   if (coin !== null && market !== null && market <= -3 && coin - market > -6) {
     return {
-      heading: "Is it just this coin, or everyone?",
+      heading,
       body: `Everyone. The whole crypto market is ${pct(market)} over 24 hours (CoinMarketCap global data), and ${symbol} is ${pct(coin)}. When most coins fall together, the cause is usually the general mood of the market rather than something wrong with one coin.`,
     };
   }
   if (coin !== null && cat !== null && c.categoryName && cat <= -3 && coin - cat > -6) {
     return {
-      heading: "Is it just this coin, or everyone?",
+      heading,
       body: `It is a neighbourhood move. Coins in the "${c.categoryName}" group are ${pct(cat)} on average today, and ${symbol} is ${pct(coin)}${market !== null ? `, while the whole market is ${pct(market)}` : ""}. Groups of similar coins often move together when money shifts from one theme to another.`,
     };
   }
   if (coin !== null && market !== null && coin - market <= -8) {
     return {
-      heading: "Is it just this coin, or everyone?",
+      heading,
       body: `It fell much more than the market. The whole market is ${pct(market)}, ${symbol} is ${pct(coin)}. A gap this big often points to something specific to ${name}, such as news, a change in the project, or a big holder selling. We cannot see the news, so we will not guess. The project's official channels are the place to check.`,
     };
   }
   if (market === null) {
-    return { heading: "Is it just this coin, or everyone?", body: "We could not load market-wide numbers just now, so we cannot compare this move with the rest of the market." };
+    return { heading, body: "We could not load market-wide numbers just now, so we cannot compare this move with the rest of the market." };
+  }
+  if (market >= 0) {
+    return {
+      heading,
+      body: `Mostly this coin. The whole market is ${pct(market)} over 24 hours while ${symbol} is ${coin !== null ? pct(coin) : "down"}, so the market is not what is pulling it down. We cannot see why. The project's official channels are the place to check.`,
+    };
   }
   return {
-    heading: "Is it just this coin, or everyone?",
+    heading,
     body: `Partly the market. The whole market is ${pct(market)} and ${symbol} is ${coin !== null ? pct(coin) : "down"}: some of the move is shared, some is specific to ${name}.`,
   };
 }
@@ -130,7 +143,7 @@ function priceDrop(input: ExplainInput): Explanation {
     heading: "What happened, in plain words",
     body: `A coin's price is simply what buyers and sellers agree on at each moment. In ${window} the price of ${name} slid ${pctAbs(change)}${price !== null ? `, to about ${usd(price)}` : ""}. Think of a price tag in a shop being marked down by ${pctAbs(change)}: the thing itself is the same, only what people will pay for it right now has changed.`,
   });
-  sections.push(wherePriceDropCame(c, symbol, name));
+  sections.push(wherePriceDropCame(c, symbol, name, isHour));
   const history = dropHistory(input, symbol, Math.max(5, Math.abs(change) * 0.7));
   if (history.section) sections.push(history.section);
   if (history.gap) gaps.push(history.gap);
@@ -305,7 +318,7 @@ function portfolio(input: ExplainInput): Explanation {
     },
   ];
   if (a && a.byCategory.length > 0) {
-    const lines = a.byCategory.slice(0, 4).map((g) => `${g.categoryName} (${g.symbols.join(", ")}): ${g.sharePct.toFixed(0)}% of the drop${g.categoryChange24hPct !== null ? `, and the whole group is ${pct(g.categoryChange24hPct)} on average` : ""}`);
+    const lines = a.byCategory.slice(0, 4).map((g) => `${g.categoryName} (${g.symbols.join(", ")}): ${g.sharePct.toFixed(0)}% of the drop${g.categoryChange24hPct !== null && g.categoryChange24hPct < 0 ? `, and the whole group is ${pct(g.categoryChange24hPct)} on average` : ""}`);
     sections.push({ heading: "Where the drop came from", body: lines.join(". ") + "." });
   }
   if (market !== null) {
@@ -315,12 +328,14 @@ function portfolio(input: ExplainInput): Explanation {
       body:
         rel <= -5
           ? `The whole crypto market is ${pct(market)} over the same time, so your portfolio fell more than the market. That usually means the coins you hold are more exposed to the sold-off group than the average coin is.`
-          : `The whole crypto market is ${pct(market)} over the same time, so most of this is the market moving as a whole rather than your particular picks.`,
+          : market < 0
+            ? `The whole crypto market is ${pct(market)} over the same time, so most of this is the market moving as a whole rather than your particular picks.`
+            : `The whole crypto market is ${pct(market)} over the same time, so the market is not what pulled your portfolio down. It is your particular picks.`,
     });
   }
   sections.push(whatPeopleDo(true));
   const headline =
-    top && top.categoryChange24hPct !== null && top.sharePct >= 50
+    top && top.categoryChange24hPct !== null && top.categoryChange24hPct < 0 && top.sharePct >= 50
       ? `Your portfolio dropped ${pctAbs(change)} because ${top.categoryName} is down ${pctAbs(top.categoryChange24hPct)} across the market`
       : `Your portfolio dropped ${pctAbs(change)} — here is where it came from`;
   const gaps: string[] = [];

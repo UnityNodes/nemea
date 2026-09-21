@@ -5,7 +5,21 @@ import { EmailChannelRequest, PushSubscriptionRequest, type TelegramLinkCode } f
 import { limiter, requireUser, type AppDeps, type AuthedRequest } from "../app.ts";
 import { HttpError, parseBody } from "../http.ts";
 import { escapeHtml } from "../services/delivery/format.ts";
+import { MAX_PUSH_SUBSCRIPTIONS_PER_USER, isKnownPushEndpoint } from "../services/delivery/push.ts";
 import { channelsView } from "./auth.ts";
+
+export function canonicalEmail(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  const at = value.lastIndexOf("@");
+  if (at < 1) return value;
+  let local = value.slice(0, at);
+  let domain = value.slice(at + 1);
+  const plus = local.indexOf("+");
+  if (plus > 0) local = local.slice(0, plus);
+  if (domain === "googlemail.com") domain = "gmail.com";
+  if (domain === "gmail.com") local = local.replace(/\./g, "");
+  return `${local}@${domain}`;
+}
 
 const LINK_TTL_MS = 10 * 60_000;
 const EMAIL_TTL_MS = 24 * 3600_000;
@@ -19,7 +33,8 @@ export function channelRoutes(deps: AppDeps): Router {
   const userKey = (req: unknown) => (req as AuthedRequest).user.id;
   const linkLimit = limiter(5, 10 * 60_000, userKey, now);
   const emailLimit = limiter(3, 3600_000, userKey, now);
-  const emailTargetLimit = limiter(2, 3600_000, (req) => String((req.body as { email?: unknown } | undefined)?.email ?? "").toLowerCase(), now);
+  const emailTargetLimit = limiter(2, 3600_000, (req) => canonicalEmail(String((req.body as { email?: unknown } | undefined)?.email ?? "")), now);
+  const pushLimit = limiter(20, 3600_000, userKey, now);
 
   r.get("/channels", auth, async (req, res) => {
     res.json(await channelsView(deps, (req as AuthedRequest).user));
@@ -80,10 +95,17 @@ export function channelRoutes(deps: AppDeps): Router {
     res.json({ publicKey: deps.pushPublicKey });
   });
 
-  r.post("/channels/push/subscribe", auth, async (req, res) => {
+  r.post("/channels/push/subscribe", auth, pushLimit, async (req, res) => {
     if (!deps.pushPublicKey) throw new HttpError(503, "push_unavailable", "Browser push is not configured on this server");
+    const user = (req as AuthedRequest).user;
     const sub = parseBody(PushSubscriptionRequest, req.body);
-    await deps.repo.savePush((req as AuthedRequest).user.id, { endpoint: sub.endpoint, p256dh: sub.keys.p256dh, auth: sub.keys.auth });
+    if (!isKnownPushEndpoint(sub.endpoint)) throw new HttpError(400, "unknown_push_service", "This browser's push service is not supported");
+    const existing = await deps.repo.pushOf(user.id);
+    if (existing.length >= MAX_PUSH_SUBSCRIPTIONS_PER_USER && !existing.some((e) => e.endpoint === sub.endpoint)) {
+      throw new HttpError(400, "too_many_subscriptions", `At most ${MAX_PUSH_SUBSCRIPTIONS_PER_USER} browsers can be subscribed`);
+    }
+    const saved = await deps.repo.savePush(user.id, { endpoint: sub.endpoint, p256dh: sub.keys.p256dh, auth: sub.keys.auth });
+    if (!saved) throw new HttpError(409, "endpoint_in_use", "This browser is already subscribed on another account");
     res.status(201).json({ ok: true });
   });
 

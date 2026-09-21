@@ -87,6 +87,8 @@ export function parseInfo(body: unknown, fetchedAt: string): TokenMeta[] {
       const id = num(e?.id);
       if (!e || id === null) continue;
       const tags = Array.isArray(e.tags) ? e.tags.filter((t): t is string => typeof t === "string") : [];
+      const rawGroups = e["tag-groups"];
+      const tagGroups = Array.isArray(rawGroups) && rawGroups.length === tags.length ? rawGroups.map((g) => (typeof g === "string" ? g : "")) : undefined;
       const contracts: TokenMeta["contracts"] = [];
       const list = Array.isArray(e.contract_address) ? e.contract_address : [];
       for (const c of list) {
@@ -108,6 +110,7 @@ export function parseInfo(body: unknown, fetchedAt: string): TokenMeta[] {
         name: str(e.name) ?? str(e.symbol) ?? String(id),
         slug: str(e.slug) ?? String(id),
         tags,
+        ...(tagGroups ? { tagGroups } : {}),
         category: str(e.category),
         isStablecoin: tags.includes("stablecoin"),
         contracts,
@@ -153,7 +156,6 @@ export function parseCategories(body: unknown, fetchedAt: string): CategorySnaps
       marketCapChange24hPct: num(c.market_cap_change),
       volumeChange24hPct: num(c.volume_change),
       numTokens: num(c.num_tokens),
-      cmcLastUpdated: str(c.last_updated),
       fetchedAt,
     });
   }

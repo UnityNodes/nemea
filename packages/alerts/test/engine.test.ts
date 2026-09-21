@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluate } from "../src/index.ts";
-import { category, global, holding, input, meta, past, prefs, quote } from "./helpers.ts";
+import { NOW, category, global, holding, input, meta, past, prefs, quote } from "./helpers.ts";
 
 const SOL = 5426;
 const ETH = 1027;
@@ -180,12 +180,6 @@ describe("category rotation", () => {
     expect(res.emit).toEqual([]);
   });
 
-  it("does not judge a category by its last_updated, which CoinMarketCap uses as a metadata date", () => {
-    const meta2024 = { ...category("c1", "Layer 1", -14), cmcLastUpdated: "2023-08-09T00:00:00.000Z" };
-    const res = evaluate(input({ holdings, metas, quotes, categories: [meta2024], global: global(-2) }));
-    expect(res.emit.map((c) => c.kind)).toEqual(["category_rotation"]);
-  });
-
   it("is silent when the market figure is missing", () => {
     const res = evaluate(input({ holdings, metas, quotes, categories: [category("c1", "Layer 1", -14)], global: global(null) }));
     expect(res.emit).toEqual([]);
@@ -247,18 +241,18 @@ describe("alert fatigue", () => {
   const dropQuotes = (ids: number[]) => ids.map((id) => quote(id, `T${id}`, 10, { percentChange24h: -17 }));
 
   it("suppresses a repeat of the same alert inside its cooldown", () => {
-    const res = evaluate(input({ holdings: [holding(SOL, "SOL", 10)], quotes: [quote(SOL, "SOL", 100, { percentChange24h: -16 })], past: [past("price_drop_24h", `price_drop_24h:${SOL}`, 5)] }));
+    const res = evaluate(input({ holdings: [holding(SOL, "SOL", 10)], quotes: [quote(SOL, "SOL", 100, { percentChange24h: -16 })], past: [past("price_drop_24h", `price_drop:${SOL}`, 5)] }));
     expect(res.emit).toEqual([]);
     expect(res.suppressed.map((s) => s.reason)).toContain("cooldown");
   });
 
   it("alerts again once the cooldown has passed", () => {
-    const res = evaluate(input({ holdings: [holding(SOL, "SOL", 10)], quotes: [quote(SOL, "SOL", 100, { percentChange24h: -16 })], past: [past("price_drop_24h", `price_drop_24h:${SOL}`, 30)] }));
+    const res = evaluate(input({ holdings: [holding(SOL, "SOL", 10)], quotes: [quote(SOL, "SOL", 100, { percentChange24h: -16 })], past: [past("price_drop_24h", `price_drop:${SOL}`, 30)] }));
     expect(res.emit).toHaveLength(1);
   });
 
   it("lets a worse situation through the cooldown", () => {
-    const res = evaluate(input({ holdings: [holding(SOL, "SOL", 10)], quotes: [quote(SOL, "SOL", 100, { percentChange24h: -35 })], past: [past("price_drop_24h", `price_drop_24h:${SOL}`, 5, "warning")] }));
+    const res = evaluate(input({ holdings: [holding(SOL, "SOL", 10)], quotes: [quote(SOL, "SOL", 100, { percentChange24h: -35 })], past: [past("price_drop_24h", `price_drop:${SOL}`, 5, "warning")] }));
     expect(res.emit[0]?.severity).toBe("critical");
   });
 
@@ -309,5 +303,69 @@ describe("alert fatigue", () => {
       }),
     );
     expect(res.emit.map((c) => c.kind)).toEqual(["price_drop_24h"]);
+  });
+});
+
+
+describe("review regressions", () => {
+  it("does not send a second alert for the same crash when the 1h window fades and the 24h window remains", () => {
+    const first = evaluate(input({ holdings: [holding(SOL, "SOL", 10)], quotes: [quote(SOL, "SOL", 100, { percentChange1h: -9, percentChange24h: -3 })] }));
+    expect(first.emit.map((c) => c.kind)).toEqual(["price_drop_1h"]);
+    const later = evaluate(
+      input({
+        holdings: [holding(SOL, "SOL", 10)],
+        quotes: [quote(SOL, "SOL", 100, { percentChange1h: 0, percentChange24h: -16 })],
+        past: [{ kind: "price_drop_1h", severity: "warning", cmcId: SOL, dedupeKey: first.emit[0]!.dedupeKey, createdAt: new Date(NOW.getTime() - 70 * 60_000).toISOString(), simulated: false }],
+      }),
+    );
+    expect(later.emit).toEqual([]);
+    expect(later.suppressed.map((s) => s.reason)).toContain("cooldown");
+  });
+
+  it("refuses a portfolio alert when a big holding has a stale quote, instead of reporting a percentage of what is left", () => {
+    const old = new Date("2026-09-21T11:00:00.000Z").toISOString();
+    const holdings = [holding(SOL, "SOL", 10), holding(ETH, "ETH", 1), holding(1, "BTC", 0.13)];
+    const quotes = [
+      quote(SOL, "SOL", 100, { percentChange24h: -12 }),
+      quote(ETH, "ETH", 1000, { percentChange24h: -12 }),
+      quote(1, "BTC", 60000, { percentChange24h: 0, cmcLastUpdated: old, fetchedAt: old }),
+    ];
+    const res = evaluate(input({ holdings, quotes, global: global(-6) }));
+    expect(res.emit.find((c) => c.kind === "portfolio_drop")).toBeUndefined();
+    expect(res.evaluated.stale).toBe(1);
+  });
+
+  it("aggregates the same coin held in several places and still checks each cost basis", () => {
+    const holdings = [holding(SOL, "SOL", 3, { id: "a" }), holding(SOL, "SOL", 7, { id: "b", costBasisUsd: 100, source: "wallet", chain: "base" })];
+    const res = evaluate(input({ holdings, quotes: [quote(SOL, "SOL", 99, { percentChange24h: -2 })] }));
+    const c = res.emit.find((x) => x.kind === "below_cost_basis");
+    expect(c).toBeDefined();
+    expect(c?.facts.find((f) => f.label === "You hold")?.value).toBe("10 SOL");
+  });
+
+  it("does not use a market snapshot or category list that our own poller has stopped refreshing", () => {
+    const holdings = [holding(SOL, "SOL", 10), holding(ETH, "ETH", 1)];
+    const metas = [meta(SOL, "SOL", ["layer-1"]), meta(ETH, "ETH", ["smart-contracts"])];
+    const quotes = [quote(SOL, "SOL", 100, { percentChange24h: -3 }), quote(ETH, "ETH", 1000, { percentChange24h: -1 })];
+    const oldFetch = new Date(NOW.getTime() - 3 * 3600_000).toISOString();
+    const cats = [{ ...category("c1", "Layer 1", -14), fetchedAt: oldFetch }];
+    const g = { ...global(-2), fetchedAt: oldFetch };
+    expect(evaluate(input({ holdings, metas, quotes, categories: cats, global: g })).emit).toEqual([]);
+    const fresh = evaluate(input({ holdings, metas, quotes, categories: [category("c1", "Layer 1", -14)], global: global(-2) }));
+    expect(fresh.emit.map((c) => c.kind)).toEqual(["category_rotation"]);
+  });
+
+  it("still shows the token alert when the portfolio alert is in cooldown", () => {
+    const holdings = [holding(SOL, "SOL", 10), holding(ETH, "ETH", 1)];
+    const quotes = [quote(SOL, "SOL", 100, { percentChange24h: -22 }), quote(ETH, "ETH", 1000, { percentChange24h: -16 })];
+    const res = evaluate(
+      input({
+        holdings,
+        quotes,
+        global: global(-6),
+        past: [{ kind: "portfolio_drop", severity: "warning", cmcId: null, dedupeKey: "portfolio_drop", createdAt: new Date(NOW.getTime() - 3600_000).toISOString(), simulated: false }],
+      }),
+    );
+    expect(res.emit.map((c) => c.kind).sort()).toEqual(["price_drop_24h", "price_drop_24h"]);
   });
 });

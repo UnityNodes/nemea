@@ -4,7 +4,7 @@ export class SlidingWindowLimiter {
   private readonly stamps: number[] = [];
 
   constructor(
-    private readonly perMinute: number,
+    private perMinute: number,
     private readonly maxWaitMs: number,
     private readonly now: () => number = Date.now,
     private readonly sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
@@ -32,6 +32,11 @@ export class SlidingWindowLimiter {
       }
       await this.sleep(Math.max(1, freesAt - t));
     }
+  }
+
+  setPerMinute(perMinute: number): void {
+    if (!Number.isInteger(perMinute) || perMinute < 1) throw new Error(`perMinute must be a positive integer, got ${perMinute}`);
+    this.perMinute = perMinute;
   }
 
   inWindow(): number {

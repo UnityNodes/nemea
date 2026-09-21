@@ -29,6 +29,7 @@ export type AppDeps = {
   ping: () => Promise<void>;
   log: (message: string, error?: unknown) => void;
   now: () => Date;
+  maxQuoteAgeMs: () => number;
   telegramConfigured: boolean;
   emailSend: ((to: string, subject: string, html: string, text: string) => Promise<{ ok: true } | { ok: false; reason: string }>) | null;
   pushPublicKey: string | null;
@@ -85,7 +86,7 @@ function upstream(error: unknown): HttpError | null {
 export function createApp(deps: AppDeps): Express {
   const app = express();
   app.disable("x-powered-by");
-  app.set("trust proxy", 1);
+  app.set("trust proxy", deps.config.TRUST_PROXY_HOPS);
   const webOrigin = new URL(deps.config.WEB_ORIGIN).origin;
 
   app.use((req, res, next) => {

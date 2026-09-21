@@ -195,6 +195,34 @@ describe("local rate limiter", () => {
   });
 });
 
+describe("hardening", () => {
+  it("keeps the one-minute budget when the plan limit is changed mid-minute", async () => {
+    const { client, calls } = make(() => json(quoteBody([1, 2, 3, 4])), { requestsPerMinute: 2, limiterWaitMs: 10 });
+    await client.getQuotes([1]);
+    await client.getQuotes([2]);
+    client.setRequestsPerMinute(2);
+    await expect(client.getQuotes([3])).rejects.toBeInstanceOf(CmcRateLimitError);
+    expect(calls).toHaveLength(2);
+  });
+
+  it("reports a body that dies half way as a failure, with a receipt", async () => {
+    const stream = new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode("{")); c.error(new Error("socket hang up")); } });
+    const { client } = make(() => new Response(stream, { status: 200 }));
+    await expect(client.getQuotes([1])).rejects.toBeInstanceOf(CmcHttpError);
+    expect(client.recentReceipts()[0]).toMatchObject({ ok: false });
+    expect(client.stats().counters.failed).toBe(1);
+  });
+
+  it("serves history from cache for the whole ttl even when the clock crosses the hour, and does not pile up keys", async () => {
+    let t = Date.parse("2026-09-21T12:50:00Z");
+    const { client, calls } = make(() => json({ status: { error_code: 0 }, data: { "1": { id: 1, quotes: [{ timestamp: "2026-09-20T00:00:00Z", quote: { USD: { price: 1 } } }] } } }), { now: () => t });
+    await client.getHistorical(1, { days: 30, interval: "daily" });
+    t += 20 * 60_000;
+    await client.getHistorical(1, { days: 30, interval: "daily" });
+    expect(calls).toHaveLength(1);
+  });
+});
+
 describe("other endpoints", () => {
   it("parses contract addresses per chain from info", async () => {
     const { client } = make(() =>
@@ -252,7 +280,6 @@ describe("other endpoints", () => {
     const cats = await client.getCategories();
     expect(cats).toHaveLength(1);
     expect(cats[0]?.avgPriceChange24hPct).toBe(-7.5);
-    expect(cats[0]?.cmcLastUpdated).toBe("2026-09-21T06:00:00.000Z");
   });
 
   it("parses historical points from the id-keyed shape", async () => {

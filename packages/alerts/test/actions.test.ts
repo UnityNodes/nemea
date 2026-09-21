@@ -117,6 +117,38 @@ describe("protective swap suggestions (level 2)", () => {
     expect(res.suggestions).toEqual([]);
   });
 
+  it("does not offer a swap target whose quote is old, even if it looked on peg", () => {
+    const usdc = holding(USDC, "USDC", 1000, { source: "wallet", chain: "ethereum", contractAddress: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48" });
+    const old = new Date("2026-09-21T06:00:00.000Z").toISOString();
+    const res = buildActions(
+      base({
+        holdings: [usdc],
+        alert: { ...base().alert, kind: "depeg", cmcId: USDC },
+        quotes: new Map([
+          [USDC, quote(USDC, "USDC", 0.95)],
+          [USDT, quote(USDT, "USDT", 1, { cmcLastUpdated: old, fetchedAt: old })],
+        ]),
+        now: new Date("2026-09-21T12:00:00.000Z"),
+        maxQuoteAgeMs: 30 * 60_000,
+      }),
+    );
+    expect(res.suggestions).toEqual([]);
+    expect(res.unavailableReason).toContain("on peg");
+  });
+
+  it("writes a short, exact amount in the swap link", () => {
+    const eth = holding(ETH, "ETH", 0.6000000000000001);
+    const res = buildActions(base({ holdings: [eth], fraction: 0.5 }));
+    const url = new URL(res.suggestions[0]?.uniswapUrl ?? "");
+    expect(url.searchParams.get("exactAmount")).toBe("0.3");
+  });
+
+  it("refuses a malformed contract address instead of building a link from it", () => {
+    const bad = holding(SOL, "WETH", 3, { source: "wallet", chain: "base", contractAddress: "0x1/../evil" });
+    const res = buildActions(base({ holdings: [bad], alert: { ...base().alert, cmcId: SOL } }));
+    expect(res.suggestions).toEqual([]);
+  });
+
   it("rejects a share outside 0..1", () => {
     for (const fraction of [0, -0.5, 1.5, Number.NaN]) {
       expect(buildActions(base({ fraction })).suggestions).toEqual([]);
@@ -147,7 +179,7 @@ describe("protective swap suggestions (level 2)", () => {
             categoryName: null,
             categoryChange24hPct: null,
             marketChange24hPct: null,
-            attribution: { portfolioChange24hPct: -20, lossUsd: 500, valueNowUsd: 12000, marketChange24hPct: -5, byCategory: [{ categoryName: "Layer 1", lossUsd: 400, sharePct: 80, categoryChange24hPct: -18, symbols: ["SOL", "ETH"] }] },
+            attribution: { portfolioChange24hPct: -20, lossUsd: 500, valueNowUsd: 12000, marketChange24hPct: -5, byCategory: [{ categoryName: "Layer 1", lossUsd: 400, sharePct: 80, categoryChange24hPct: -18, symbols: ["SOL", "ETH"], cmcIds: [SOL, ETH] }] },
           },
         },
       }),

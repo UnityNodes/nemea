@@ -138,7 +138,7 @@ export function planCadence(creditLimitMonthly: number | null, workload: Workloa
   const usable = creditLimitMonthly * (1 - ON_DEMAND_RESERVE);
   for (const multiplier of MULTIPLIERS) {
     const scaled = scaleCadence(desired, multiplier);
-    const cadence = multiplier === 1 ? scaled : collapseTiers(scaled, workload);
+    const cadence = collapseTiers(scaled, workload);
     const est = estimateMonthlyCredits(cadence, workload);
     if (est.perMonth <= usable) {
       return { cadence, multiplier, estimatedCreditsPerMonth: est.perMonth, verdict: multiplier === 1 ? "fits" : "stretched" };

@@ -24,6 +24,12 @@ export function toHolding(r: HoldingRow): Holding {
   };
 }
 
+export class HoldingLimitError extends Error {
+  constructor(readonly max: number) {
+    super(`A portfolio can hold at most ${max} coins`);
+  }
+}
+
 export class Repo {
   constructor(
     private readonly db: Db,
@@ -86,12 +92,17 @@ export class Repo {
     return row?.n ?? 0;
   }
 
-  async addHolding(userId: string, h: Omit<Holding, "id">): Promise<Holding> {
-    const [row] = await this.db
-      .insert(holdings)
-      .values({ id: randomUUID(), userId, cmcId: h.cmcId, symbol: h.symbol, name: h.name, amount: h.amount, costBasisUsd: h.costBasisUsd, source: h.source, chain: h.chain, contractAddress: h.contractAddress, walletAddress: h.walletAddress, createdAt: this.now() })
-      .returning();
-    return toHolding(row as HoldingRow);
+  async addHolding(userId: string, h: Omit<Holding, "id">, maxHoldings: number = Number.MAX_SAFE_INTEGER): Promise<Holding> {
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
+      const [count] = await tx.select({ n: sql<number>`count(*)::int` }).from(holdings).where(eq(holdings.userId, userId));
+      if ((count?.n ?? 0) >= maxHoldings) throw new HoldingLimitError(maxHoldings);
+      const [row] = await tx
+        .insert(holdings)
+        .values({ id: randomUUID(), userId, cmcId: h.cmcId, symbol: h.symbol, name: h.name, amount: h.amount, costBasisUsd: h.costBasisUsd, source: h.source, chain: h.chain, contractAddress: h.contractAddress, walletAddress: h.walletAddress, createdAt: this.now() })
+        .returning();
+      return toHolding(row as HoldingRow);
+    });
   }
 
   async updateHolding(userId: string, id: string, patch: { amount?: number; costBasisUsd?: number | null }): Promise<Holding | null> {
@@ -113,11 +124,14 @@ export class Repo {
     return rows.length > 0;
   }
 
-  async replaceWalletHoldings(userId: string, walletAddress: string, chains: readonly Chain[], items: ReadonlyArray<Omit<Holding, "id">>): Promise<void> {
+  async replaceWalletHoldings(userId: string, walletAddress: string, chains: readonly Chain[], items: ReadonlyArray<Omit<Holding, "id">>, maxHoldings: number = Number.MAX_SAFE_INTEGER): Promise<void> {
     await this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
       await tx
         .delete(holdings)
         .where(and(eq(holdings.userId, userId), eq(holdings.source, "wallet"), eq(holdings.walletAddress, walletAddress.toLowerCase()), inArray(holdings.chain, [...chains])));
+      const [count] = await tx.select({ n: sql<number>`count(*)::int` }).from(holdings).where(eq(holdings.userId, userId));
+      if ((count?.n ?? 0) + items.length > maxHoldings) throw new HoldingLimitError(maxHoldings);
       for (const h of items) {
         await tx.insert(holdings).values({ id: randomUUID(), userId, cmcId: h.cmcId, symbol: h.symbol, name: h.name, amount: h.amount, costBasisUsd: null, source: "wallet", chain: h.chain, contractAddress: h.contractAddress, walletAddress: walletAddress.toLowerCase(), createdAt: this.now() });
       }
@@ -208,8 +222,13 @@ export class Repo {
     await this.db.update(users).set({ email, emailVerified: verified }).where(eq(users.id, userId));
   }
 
-  async savePush(userId: string, sub: { endpoint: string; p256dh: string; auth: string }): Promise<void> {
-    await this.db.insert(pushSubscriptions).values({ ...sub, userId, createdAt: this.now() }).onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: { userId, p256dh: sub.p256dh, auth: sub.auth } });
+  async savePush(userId: string, sub: { endpoint: string; p256dh: string; auth: string }): Promise<boolean> {
+    const rows = await this.db
+      .insert(pushSubscriptions)
+      .values({ ...sub, userId, createdAt: this.now() })
+      .onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: { p256dh: sub.p256dh, auth: sub.auth }, setWhere: eq(pushSubscriptions.userId, userId) })
+      .returning({ endpoint: pushSubscriptions.endpoint });
+    return rows.length > 0;
   }
 
   async pushOf(userId: string): Promise<Array<typeof pushSubscriptions.$inferSelect>> {
