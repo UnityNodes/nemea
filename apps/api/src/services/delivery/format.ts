@@ -6,28 +6,64 @@ export function escapeHtml(value: string): string {
 }
 
 const SEVERITY_MARK = { critical: "🔴", warning: "🟠", info: "🔵" } as const;
+const SEVERITY_LABEL = { critical: "CRITICAL", warning: "WARNING", info: "INFO" } as const;
 const TELEGRAM_LIMIT = 3800;
+const SUMMARY_LIMIT = 700;
+
+const KIND_HEADER: Record<string, { icon: string; label: string }> = {
+  price_drop_1h: { icon: "📉", label: "Price drop, 1 hour" },
+  price_drop_24h: { icon: "📉", label: "Price drop, 24 hours" },
+  below_cost_basis: { icon: "🎯", label: "Below what you paid" },
+  near_low: { icon: "🔻", label: "Near a low" },
+  depeg: { icon: "⚖️", label: "Stablecoin off its peg" },
+  stable_volume_anomaly: { icon: "🌊", label: "Stablecoin trading surge" },
+  volume_spike: { icon: "📊", label: "Volume spike" },
+  volume_dry_up: { icon: "🧊", label: "Trading slowed" },
+  category_rotation: { icon: "🔄", label: "Category rotation" },
+  portfolio_drop: { icon: "💼", label: "Portfolio drop" },
+};
+
+export function factIcon(label: string): string {
+  const l = label.toLowerCase();
+  if (/^price/.test(l)) return "💵";
+  if (/cost basis/.test(l)) return "🎯";
+  if (/^you hold/.test(l)) return "👛";
+  if (/position value|value now|value 24h/.test(l)) return "💼";
+  if (/volume/.test(l)) return "📊";
+  if (/whole market|exposure/.test(l)) return "🌍";
+  if (/^from /.test(l)) return "🧩";
+  if (/\blow\b/.test(l) || /distance/.test(l)) return "🔻";
+  if (/change|portfolio|below|drop/.test(l)) return "📉";
+  return "▫️";
+}
 
 export function alertUrl(webOrigin: string, alertId: string): string {
   return `${webOrigin.replace(/\/$/, "")}/alerts/${alertId}`;
 }
 
+function cut(value: string, limit: number): string {
+  return value.length <= limit ? value : `${value.slice(0, limit - 1).trimEnd()}…`;
+}
+
 export function telegramAlert(alert: AlertRow, webOrigin: string): { text: string; keyboard: Array<Array<{ text: string; url: string }>> | null } {
   const url = alertUrl(webOrigin, alert.id);
   const https = url.startsWith("https://");
-  const lines = [
-    `${SEVERITY_MARK[alert.severity]} <b>${alert.simulated ? "[SIMULATION] " : ""}${escapeHtml(alert.title)}</b>`,
-    "",
-    escapeHtml(alert.summary),
-    "",
-    ...alert.facts.map((f) => `• ${escapeHtml(f.label)}: <b>${escapeHtml(f.value)}</b>`),
-    "",
-    `<i>${escapeHtml(DISCLAIMER)}</i>`,
-  ];
-  if (!https) lines.push("", `Explain like I'm 5: ${escapeHtml(url)}`);
-  let text = lines.join("\n");
-  if (text.length > TELEGRAM_LIMIT) text = `${text.slice(0, TELEGRAM_LIMIT - 1)}…`;
-  return { text, keyboard: https ? [[{ text: "Explain like I'm 5", url }]] : null };
+  const kind = KIND_HEADER[alert.kind] ?? { icon: "🔔", label: "Alert" };
+  const head = [`${SEVERITY_MARK[alert.severity]} <b>${SEVERITY_LABEL[alert.severity]}</b>  ·  ${kind.icon} ${escapeHtml(kind.label)}`];
+  if (alert.simulated) head.push("🧪 <b>SIMULATION</b>  ·  the price move is made up for this demo");
+  const factLines = alert.facts.map((f) => `${factIcon(f.label)} ${escapeHtml(f.label)}  <b>${escapeHtml(f.value)}</b>`);
+  const tail: string[] = [];
+  if (!https) tail.push(`Explain like I'm 5: ${escapeHtml(url)}`, "");
+  tail.push(`<i>${escapeHtml(DISCLAIMER)}</i>`);
+  const build = (facts: string[]) =>
+    [...head, "", `<b>${escapeHtml(alert.title)}</b>`, "", `<blockquote>${escapeHtml(cut(alert.summary, SUMMARY_LIMIT))}</blockquote>`, "", ...facts, ...(facts.length > 0 ? [""] : []), ...tail].join("\n");
+  let facts = factLines;
+  let text = build(facts);
+  while (text.length > TELEGRAM_LIMIT && facts.length > 0) {
+    facts = facts.slice(0, -1);
+    text = build(facts);
+  }
+  return { text, keyboard: https ? [[{ text: "Explain like I'm 5  →", url }]] : null };
 }
 
 export function pushPayload(alert: AlertRow, webOrigin: string): string {

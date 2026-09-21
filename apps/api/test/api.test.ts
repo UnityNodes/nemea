@@ -222,7 +222,7 @@ describe("live monitoring and alerts", () => {
     const msg = sent[0]!.body as any;
     expect(msg.text).toContain("SOL is down 21%");
     expect(msg.text).toContain("Not financial advice");
-    expect(msg.text).not.toContain("[SIMULATION]");
+    expect(msg.text).not.toContain("SIMULATION");
     expect(msg.parse_mode).toBe("HTML");
     expect(msg.reply_markup.inline_keyboard[0][0].url).toMatch(/^https:\/\/nemea\.test\/alerts\//);
     expect(list.deliveries.find((d: any) => d.channel === "telegram")?.status).toBe("sent");
@@ -323,7 +323,7 @@ describe("simulate, explain, actions", () => {
     expect(sim.status).toBe(201);
     expect(sim.body.alert).toMatchObject({ kind: "price_drop_24h", symbol: "SOL", simulated: true });
     expect(h.telegram.at(-1)!.body).toMatchObject({ chat_id: "777" });
-    expect(String((h.telegram.at(-1)!.body as any).text)).toContain("[SIMULATION]");
+    expect(String((h.telegram.at(-1)!.body as any).text)).toContain("SIMULATION");
     const list = (await c.request("GET", "/alerts")).body;
     expect(list.week.count).toBe(0);
     const again = await c.request("POST", "/alerts/simulate", { scenario: "drop", cmcId: SOL });
