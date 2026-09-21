@@ -18,6 +18,7 @@ export function alertRoutes(deps: AppDeps): Router {
   const userKey = (req: unknown) => (req as AuthedRequest).user.id;
   const simulateLimit = limiter(10, 60_000, userKey, now);
   const explainLimit = limiter(20, 60_000, userKey, now);
+  const explainGlobal = limiter(300, 3600_000, () => "global", now);
 
   async function deliveriesFor(alertIds: string[]) {
     const rows = await deps.repo.deliveriesFor(alertIds);
@@ -63,7 +64,7 @@ export function alertRoutes(deps: AppDeps): Router {
     res.json({ ok: true });
   });
 
-  r.get("/alerts/:id/explain", auth, explainLimit, async (req, res) => {
+  r.get("/alerts/:id/explain", auth, explainLimit, explainGlobal, async (req, res) => {
     const user = (req as AuthedRequest).user;
     const row = await deps.repo.alertById(user.id, String(req.params.id));
     if (!row) throw new HttpError(404, "not_found", "No such alert");

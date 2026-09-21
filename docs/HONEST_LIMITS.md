@@ -25,6 +25,7 @@ The product spec asks for a one-minute stablecoin check. That costs about 43,200
 - One quotes call covers up to 100 coins for one credit, so holdings ride along on the depeg poll for free. Tiers (top every 5 minutes, small every 30) only save credits once there are more than 100 distinct coins across all users. The planner collapses them when they save nothing.
 - 15% of the budget is held back for on-demand calls (token lookup, history for Explain, wallet import).
 - When CoinMarketCap answers with a daily or monthly quota error, polling pauses for 30 minutes and `/status` says so.
+- On-demand calls a visitor can trigger are capped so a burst of visitors cannot burn the credit budget: token lookups 600 per hour, Explain 300 per hour, wallet imports 120 per hour across everyone, plus per-user caps. When a cap is hit the user sees a "too many requests" message (`apps/api/test/api.test.ts`, "credit protection").
 - Every real CoinMarketCap call is logged with time, endpoint, HTTP status, credits and latency, and shown on `/status`.
 - Cached: quotes 45 s, global 60 s, categories 5 min, metadata 24 h, history 6 h. Failures are never cached.
 

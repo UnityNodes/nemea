@@ -60,12 +60,14 @@ export function portfolioRoutes(deps: AppDeps): Router {
   const userKey = (req: unknown) => (req as AuthedRequest).user.id;
   const lookupLimit = limiter(20, 60_000, userKey, now);
   const walletLimit = limiter(6, 60_000, userKey, now);
+  const lookupGlobal = limiter(600, 3600_000, () => "global", now);
+  const walletGlobal = limiter(120, 3600_000, () => "global", now);
 
   r.get("/portfolio", auth, async (req, res) => {
     res.json(await portfolioView(deps, (req as AuthedRequest).user, true));
   });
 
-  r.get("/tokens/lookup", auth, lookupLimit, async (req, res) => {
+  r.get("/tokens/lookup", auth, lookupLimit, lookupGlobal, async (req, res) => {
     const { symbol } = parseBody(LookupQuery, req.query);
     let metas;
     try {
@@ -137,7 +139,7 @@ export function portfolioRoutes(deps: AppDeps): Router {
     res.status(201).json({ portfolio: await portfolioView(deps, user, false) });
   });
 
-  r.post("/portfolio/import-wallet/preview", auth, walletLimit, async (req, res) => {
+  r.post("/portfolio/import-wallet/preview", auth, walletLimit, walletGlobal, async (req, res) => {
     const { address, chains } = parseBody(WalletImportRequest, req.body);
     res.json(await deps.walletReader(address, [...new Set(chains)]));
   });

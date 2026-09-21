@@ -491,12 +491,44 @@ describe("channels", () => {
     expect(await d.runDigests(8, 8)).toEqual({ sent: 0, failed: 0 });
   });
 
+  it("does not let one address be mail-bombed with confirmation emails across accounts", async () => {
+    for (let i = 0; i < 2; i++) {
+      const c = await guest(h);
+      expect((await c.request("POST", "/channels/email", { email: "Victim@example.com" })).status).toBe(202);
+    }
+    const third = await guest(h);
+    const r = await third.request("POST", "/channels/email", { email: "victim@example.com" });
+    expect(r.status).toBe(429);
+    expect(h.emails).toHaveLength(2);
+  });
+
   it("says push is unavailable rather than pretending to subscribe", async () => {
     const c = await guest(h);
     const r = await c.request("POST", "/channels/push/subscribe", { endpoint: "https://push.example/abc", keys: { p256dh: "x", auth: "y" } });
     expect(r.status).toBe(503);
     expect((await c.request("GET", "/channels/push/public-key")).body.publicKey).toBeNull();
   });
+});
+
+describe("credit protection", () => {
+  it("caps expensive on-demand lookups globally so a burst of visitors cannot burn the CMC budget", async () => {
+    const users = await Promise.all(Array.from({ length: 20 }, () => guest(h)));
+    let served = 0;
+    let refused = 0;
+    for (let round = 0; round < 3 && refused === 0; round++) {
+      for (const c of users) {
+        for (let i = 0; i < 20 && refused === 0; i++) {
+          const r = await c.request("GET", "/tokens/lookup?symbol=BTC");
+          if (r.status === 200) served += 1;
+          if (r.status === 429) refused += 1;
+        }
+      }
+      h.clock.t += 61_000;
+    }
+    expect(refused).toBe(1);
+    expect(served).toBe(600);
+    expect(h.fake.calls.filter((c) => c.path.includes("/info")).length).toBeLessThanOrEqual(2);
+  }, 90_000);
 });
 
 describe("operations", () => {

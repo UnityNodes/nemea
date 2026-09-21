@@ -19,6 +19,7 @@ export function channelRoutes(deps: AppDeps): Router {
   const userKey = (req: unknown) => (req as AuthedRequest).user.id;
   const linkLimit = limiter(5, 10 * 60_000, userKey, now);
   const emailLimit = limiter(3, 3600_000, userKey, now);
+  const emailTargetLimit = limiter(2, 3600_000, (req) => String((req.body as { email?: unknown } | undefined)?.email ?? "").toLowerCase(), now);
 
   r.get("/channels", auth, async (req, res) => {
     res.json(await channelsView(deps, (req as AuthedRequest).user));
@@ -39,7 +40,7 @@ export function channelRoutes(deps: AppDeps): Router {
     res.json({ ok: true });
   });
 
-  r.post("/channels/email", auth, emailLimit, async (req, res) => {
+  r.post("/channels/email", auth, emailLimit, emailTargetLimit, async (req, res) => {
     if (!deps.emailSend) throw new HttpError(503, "email_unavailable", "Email is not configured on this server");
     const user = (req as AuthedRequest).user;
     const { email } = parseBody(EmailChannelRequest, req.body);
