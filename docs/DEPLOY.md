@@ -27,6 +27,9 @@ Create a database and copy its connection string into `DATABASE_URL` on the API.
 | `ETHERSCAN_API_KEY` | optional | Blockscout is used without it |
 | `RESEND_API_KEY`, `EMAIL_FROM` | for email | both |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | for push | all three. Generate with `npx web-push generate-vapid-keys`. Subject like `mailto:you@example.com`. |
+| `ADMIN_TELEGRAM_CHAT_ID` | optional | your own chat id; Nemea messages it once a day when CoinMarketCap credits fall below 15% |
+| `TRUST_PROXY_HOPS` | optional | proxy hops in front of the API, default 1. After deploy open `/status` from two networks and check `requestIp` shows your address, not the proxy's; per-IP limits depend on it. |
+| `CMC_BASE_URL` | never in production | overrides the CoinMarketCap host; `/status` shows a warning when it is not `pro-api.coinmarketcap.com` |
 | `POLLER_ENABLED` | optional | `false` turns the poller off |
 
 The API trusts one proxy hop for client IPs (`trust proxy 1`), so run it behind Railway's proxy and not directly on the internet.
