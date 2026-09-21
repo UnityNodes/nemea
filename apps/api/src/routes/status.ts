@@ -4,6 +4,12 @@ import type { AppDeps } from "../app.ts";
 import { clientIp } from "../http.ts";
 
 const VERSION = "0.1.0";
+const OFFICIAL_HOST = "pro-api.coinmarketcap.com";
+
+function dataSource(baseUrl: string | undefined): { host: string; official: boolean } {
+  const host = baseUrl ? new URL(baseUrl).host : OFFICIAL_HOST;
+  return { host, official: host === OFFICIAL_HOST };
+}
 
 export function statusRoutes(deps: AppDeps): Router {
   const r = Router();
@@ -45,6 +51,7 @@ export function statusRoutes(deps: AppDeps): Router {
       cache: { hits: stats.cache.hits, misses: stats.cache.misses },
       version: VERSION,
       requestIp: clientIp(req),
+      dataSource: dataSource(deps.config.CMC_BASE_URL),
     };
     res.json(body);
   });

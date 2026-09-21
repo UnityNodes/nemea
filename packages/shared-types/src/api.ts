@@ -199,6 +199,7 @@ export type SystemStatus = {
   cache: { hits: number; misses: number };
   version: string;
   requestIp: string;
+  dataSource: { host: string; official: boolean };
 };
 
 export type ApiError = { error: { code: string; message: string } };

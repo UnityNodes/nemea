@@ -576,6 +576,14 @@ describe("review hardening", () => {
     expect(typeof s.requestIp).toBe("string");
     expect(s.requestIp.length).toBeGreaterThan(0);
   });
+
+  it("says plainly when the market data comes from anything other than CoinMarketCap's own API host", async () => {
+    const s = (await h.client().request("GET", "/status")).body;
+    expect(s.dataSource).toEqual({ host: "cmc.test", official: false });
+    await h.close();
+    h = await startHarness({ config: { CMC_BASE_URL: "https://pro-api.coinmarketcap.com" } });
+    expect((await h.client().request("GET", "/status")).body.dataSource).toEqual({ host: "pro-api.coinmarketcap.com", official: true });
+  });
 });
 
 describe("credit protection", () => {

@@ -8,7 +8,10 @@ const config: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   transpilePackages: ["@nemea/shared-types"],
   async rewrites() {
-    return [{ source: "/api/:path*", destination: `${apiOrigin}/:path*` }];
+    return [
+      { source: "/api/internal/:path*", destination: "/404" },
+      { source: "/api/:path*", destination: `${apiOrigin}/:path*` },
+    ];
   },
 };
 
