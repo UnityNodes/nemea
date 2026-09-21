@@ -6,8 +6,8 @@ export type PushSendResult = { ok: true } | { ok: false; reason: string; gone: b
 export class PushSender {
   readonly publicKey: string;
 
-  constructor(publicKey: string, privateKey: string, subject: string) {
-    webpush.setVapidDetails(subject, publicKey, privateKey);
+  constructor(publicKey: string, vapidSecret: string, subject: string) {
+    webpush.setVapidDetails(subject, publicKey, vapidSecret);
     this.publicKey = publicKey;
   }
 

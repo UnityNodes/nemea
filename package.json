@@ -15,7 +15,10 @@
     "gate:c": "tsx --env-file-if-exists=.env scripts/gates/gate-c-telegram.ts",
     "dev:api": "pnpm --filter @nemea/api dev",
     "dev:web": "pnpm --filter @nemea/web dev",
-    "dev:bot": "pnpm --filter @nemea/bot dev"
+    "dev:bot": "pnpm --filter @nemea/bot dev",
+    "check:claims": "tsx scripts/check-claims.ts",
+    "cadence": "tsx scripts/print-cadence.ts",
+    "dev:stack": "./scripts/dev-stack.sh"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -24,6 +27,7 @@
     "vitest": "^3.0.0",
     "@nemea/cmc-client": "workspace:*",
     "@nemea/alerts": "workspace:*",
-    "@nemea/shared-types": "workspace:*"
+    "@nemea/shared-types": "workspace:*",
+    "@nemea/chain-reader": "workspace:*"
   }
 }

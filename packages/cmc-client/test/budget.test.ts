@@ -66,6 +66,25 @@ describe("cadence planner", () => {
     expect(plan.estimatedCreditsPerMonth).toBeLessThanOrEqual(12_750);
   });
 
+  it("lets top and small holdings ride along on the depeg poll when the plan is stretched, since cost is per call", () => {
+    const plan = planCadence(15_000, small);
+    expect(plan.cadence.topSec).toBe(plan.cadence.stablecoinsSec);
+    expect(plan.cadence.smallSec).toBe(plan.cadence.stablecoinsSec);
+    const est = estimateMonthlyCredits(plan.cadence, small);
+    const stableCalls = 30 * 24 * 3600 / plan.cadence.stablecoinsSec;
+    const globalCalls = 30 * 24 * 3600 / plan.cadence.globalSec;
+    const categoryCalls = 30 * 24 * 3600 / plan.cadence.categoriesSec;
+    expect(est.perMonth).toBe(stableCalls + globalCalls + categoryCalls);
+  });
+
+  it("keeps real tiers when there are more than a hundred distinct coins, because then each tier costs calls", () => {
+    const many = Array.from({ length: 150 }, (_, i) => 10_000 + i);
+    const plan = planCadence(450_000, { stablecoinIds: [825], topIds: many.slice(0, 50), smallIds: many.slice(50) });
+    expect(plan.verdict).toBe("fits");
+    const stretched = planCadence(60_000, { stablecoinIds: [825], topIds: many.slice(0, 50), smallIds: many.slice(50) });
+    expect(stretched.cadence.smallSec).toBeGreaterThan(stretched.cadence.stablecoinsSec);
+  });
+
   it("refuses to claim success when even the slowest cadence does not fit", () => {
     const plan = planCadence(100, small);
     expect(plan.verdict).toBe("insufficient");

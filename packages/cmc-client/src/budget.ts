@@ -121,6 +121,15 @@ export type CadencePlan = {
 
 const MULTIPLIERS = [1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 16, 24, 32, 48, 96];
 
+function distinctIds(workload: Workload): number {
+  return new Set([...workload.stablecoinIds, ...workload.topIds, ...workload.smallIds]).size;
+}
+
+function collapseTiers(cadence: Cadence, workload: Workload): Cadence {
+  if (distinctIds(workload) > IDS_PER_CREDIT) return cadence;
+  return { ...cadence, topSec: cadence.stablecoinsSec, smallSec: cadence.stablecoinsSec };
+}
+
 export function planCadence(creditLimitMonthly: number | null, workload: Workload, desired: Cadence = DESIRED_CADENCE): CadencePlan {
   if (creditLimitMonthly === null) {
     const est = estimateMonthlyCredits(desired, workload);
@@ -128,14 +137,15 @@ export function planCadence(creditLimitMonthly: number | null, workload: Workloa
   }
   const usable = creditLimitMonthly * (1 - ON_DEMAND_RESERVE);
   for (const multiplier of MULTIPLIERS) {
-    const cadence = scaleCadence(desired, multiplier);
+    const scaled = scaleCadence(desired, multiplier);
+    const cadence = multiplier === 1 ? scaled : collapseTiers(scaled, workload);
     const est = estimateMonthlyCredits(cadence, workload);
     if (est.perMonth <= usable) {
       return { cadence, multiplier, estimatedCreditsPerMonth: est.perMonth, verdict: multiplier === 1 ? "fits" : "stretched" };
     }
   }
   const last = MULTIPLIERS[MULTIPLIERS.length - 1] as number;
-  const cadence = scaleCadence(desired, last);
+  const cadence = collapseTiers(scaleCadence(desired, last), workload);
   return {
     cadence,
     multiplier: last,
