@@ -13,7 +13,15 @@ export class DeliveryService {
     private readonly webOrigin: string,
     private readonly log: (message: string, error?: unknown) => void = () => undefined,
     private readonly now: () => Date = () => new Date(),
+    private readonly adminChatId: string | null = null,
   ) {}
+
+  async notifyAdmin(text: string): Promise<boolean> {
+    if (!this.adminChatId || !this.senders.telegram) return false;
+    const res = await this.senders.telegram.send(this.adminChatId, text, null);
+    if (!res.ok) this.log(`admin notification failed: ${res.reason}`);
+    return res.ok;
+  }
 
   channelsAvailable(): { telegram: boolean; email: boolean; push: boolean } {
     return { telegram: !!this.senders.telegram, email: !!this.senders.email, push: !!this.senders.push };

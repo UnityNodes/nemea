@@ -17,6 +17,7 @@ const EnvSchema = z.object({
   WEB_ORIGIN: z.string().url().default("http://localhost:3000"),
   TELEGRAM_BOT_TOKEN: optionalString,
   TELEGRAM_BOT_USERNAME: optionalString,
+  ADMIN_TELEGRAM_CHAT_ID: optionalString,
   ETHERSCAN_API_KEY: optionalString,
   RESEND_API_KEY: optionalString,
   EMAIL_FROM: optionalString,

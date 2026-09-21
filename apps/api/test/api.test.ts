@@ -511,6 +511,28 @@ describe("channels", () => {
 });
 
 describe("credit protection", () => {
+  it("warns the operator once a day when the month's credits run low, and not before", async () => {
+    await h.close();
+    h = await startHarness({ config: { ADMIN_TELEGRAM_CHAT_ID: "999" } });
+    const c = await guest(h);
+    await addHolding(c, ETH, 1);
+    h.fake.setPlan({ creditLimitMonthly: 15_000, rateLimitPerMinute: 50, historical: true, priceStats: false });
+    h.fake.setCreditsUsed(5_000);
+    await h.composed.poller!.tick();
+    expect(h.telegram.filter((m) => (m.body as any).chat_id === "999")).toHaveLength(0);
+
+    await h.close();
+    h = await startHarness({ config: { ADMIN_TELEGRAM_CHAT_ID: "999" } });
+    const c2 = await guest(h);
+    await addHolding(c2, ETH, 1);
+    h.fake.setPlan({ creditLimitMonthly: 15_000, rateLimitPerMinute: 50, historical: true, priceStats: false });
+    h.fake.setCreditsUsed(13_000);
+    await h.composed.poller!.tick();
+    const warned = h.telegram.filter((m) => (m.body as any).chat_id === "999");
+    expect(warned).toHaveLength(1);
+    expect(String((warned[0]!.body as any).text)).toContain("2000 of 15000 left");
+  });
+
   it("caps expensive on-demand lookups globally so a burst of visitors cannot burn the CMC budget", async () => {
     const users = await Promise.all(Array.from({ length: 20 }, () => guest(h)));
     let served = 0;

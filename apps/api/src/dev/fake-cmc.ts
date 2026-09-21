@@ -51,6 +51,7 @@ export type FakeCmc = {
   setMarket: (changePct: number) => void;
   setCategory: (name: string, avg: number) => void;
   setPlan: (plan: { creditLimitMonthly: number; rateLimitPerMinute: number; historical: boolean; priceStats: boolean }) => void;
+  setCreditsUsed: (used: number) => void;
   setHistory: (id: number, prices: number[]) => void;
   failNext: (status: number, errorCode: number, message: string) => void;
   calls: Array<{ path: string; params: Record<string, string> }>;
@@ -68,6 +69,7 @@ export function createFakeCmc(opts: { now?: () => Date } = {}): FakeCmc {
   const histories = new Map<number, number[]>();
   const plan = { creditLimitMonthly: 450_000, rateLimitPerMinute: 600, historical: true, priceStats: false };
   let marketChange = -1.1;
+  let creditsUsed = 0;
   let fail: { status: number; errorCode: number; message: string } | null = null;
   const calls: FakeCmc["calls"] = [];
 
@@ -148,7 +150,7 @@ export function createFakeCmc(opts: { now?: () => Date } = {}): FakeCmc {
     const ids = (params.id ?? "").split(",").filter(Boolean).map(Number);
     switch (url.pathname) {
       case "/v1/key/info":
-        return json({ status: status(0), data: { plan: { credit_limit_monthly: plan.creditLimitMonthly, rate_limit_minute: plan.rateLimitPerMinute }, usage: { current_month: { credits_used: 0, credits_left: plan.creditLimitMonthly }, current_day: { credits_used: 0 } } } });
+        return json({ status: status(0), data: { plan: { credit_limit_monthly: plan.creditLimitMonthly, rate_limit_minute: plan.rateLimitPerMinute }, usage: { current_month: { credits_used: creditsUsed, credits_left: plan.creditLimitMonthly - creditsUsed }, current_day: { credits_used: 0 } } } });
       case "/v3/cryptocurrency/quotes/latest":
         return json({ status: status(), data: ids.map((id) => state.get(id)).filter((c): c is Coin => !!c).map(entry) });
       case "/v2/cryptocurrency/info": {
@@ -198,6 +200,9 @@ export function createFakeCmc(opts: { now?: () => Date } = {}): FakeCmc {
       categories.set(name, avg);
     },
     setPlan: (p) => Object.assign(plan, p),
+    setCreditsUsed: (used) => {
+      creditsUsed = used;
+    },
     setHistory: (id, prices) => {
       histories.set(id, prices);
     },

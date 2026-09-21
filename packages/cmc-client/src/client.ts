@@ -166,8 +166,9 @@ export class CmcClient {
     } catch {
       body = null;
     }
-    const status = (body as { status?: { error_code?: number; error_message?: string | null } } | null)?.status;
-    const errorCode = typeof status?.error_code === "number" && status.error_code !== 0 ? status.error_code : null;
+    const status = (body as { status?: { error_code?: number | string; error_message?: string | null } } | null)?.status;
+    const rawCode = status?.error_code === undefined || status.error_code === null ? Number.NaN : Number(status.error_code);
+    const errorCode = Number.isFinite(rawCode) && rawCode !== 0 ? rawCode : null;
     const message = status?.error_message ?? res.statusText ?? "unknown error";
     const ok = res.ok && errorCode === null;
     const credits = ok ? creditCount(body) : null;
@@ -200,8 +201,13 @@ export class CmcClient {
       const chunk = unique.slice(i, i + MAX_IDS_PER_REQUEST);
       const key = `quotes:${chunk.join(",")}`;
       const result = await this.cache.getOrLoad(key, this.ttl.quotes, async () => {
-        const body = await this.call(ENDPOINTS.quotesLatest, { id: chunk.join(","), convert: "USD", skip_invalid: true });
-        return parseQuotes(body, chunk, new Date(this.now()).toISOString());
+        try {
+          const body = await this.call(ENDPOINTS.quotesLatest, { id: chunk.join(","), convert: "USD", skip_invalid: true });
+          return parseQuotes(body, chunk, new Date(this.now()).toISOString());
+        } catch (error) {
+          if (error instanceof CmcHttpError && error.httpStatus === 400 && /no data found/i.test(error.message)) return { quotes: [], missing: [...chunk] };
+          throw error;
+        }
       });
       quotes.push(...result.quotes);
       missing.push(...result.missing);

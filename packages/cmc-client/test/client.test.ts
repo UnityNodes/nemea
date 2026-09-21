@@ -267,6 +267,31 @@ describe("other endpoints", () => {
   });
 });
 
+describe("string error codes and all-invalid ids", () => {
+  it("understands error_code sent as a string", async () => {
+    const { client } = make(() => json({ status: { error_code: "1010", error_message: "monthly credit limit" } }, 429));
+    const err = await client.getQuotes([1]).catch((e) => e);
+    expect(err).toBeInstanceOf(CmcRateLimitError);
+    expect((err as CmcRateLimitError).scope).toBe("monthly");
+    expect((err as CmcRateLimitError).errorCode).toBe(1010);
+  });
+
+  it("treats a string 0 as success", async () => {
+    const { client } = make(() => json({ status: { error_code: "0", credit_count: 1 }, data: [{ id: 1, symbol: "BTC", quote: [{ symbol: "USD", price: 5 }] }] }));
+    expect((await client.getQuotes([1])).quotes).toHaveLength(1);
+  });
+
+  it("returns every id as missing when CMC says it found none of them, instead of failing", async () => {
+    const { client } = make(() => json({ status: { error_code: "400", error_message: "No data found for 'id': '999999999'", credit_count: 0 } }, 400));
+    expect(await client.getQuotes([999999999])).toEqual({ quotes: [], missing: [999999999] });
+  });
+
+  it("still fails on other 400s", async () => {
+    const { client } = make(() => json({ status: { error_code: "400", error_message: "Invalid value for id" } }, 400));
+    await expect(client.getQuotes([1])).rejects.toBeInstanceOf(CmcHttpError);
+  });
+});
+
 describe("v3 response shape", () => {
   const v3 = {
     status: { error_code: 0, error_message: null, credit_count: 1 },

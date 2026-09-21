@@ -41,7 +41,7 @@ export async function compose(config: Config, overrides: ComposeOverrides = {}):
   const telegram = config.TELEGRAM_BOT_TOKEN ? new TelegramSender(config.TELEGRAM_BOT_TOKEN, overrides.fetchImpl) : null;
   const email = config.RESEND_API_KEY && config.EMAIL_FROM ? new EmailSender(config.RESEND_API_KEY, config.EMAIL_FROM, overrides.fetchImpl) : null;
   const push = config.VAPID_PUBLIC_KEY && config.VAPID_PRIVATE_KEY && config.VAPID_SUBJECT ? new PushSender(config.VAPID_PUBLIC_KEY, config.VAPID_PRIVATE_KEY, config.VAPID_SUBJECT) : null;
-  const delivery = new DeliveryService(repo, { telegram, email, push }, config.WEB_ORIGIN, log, now);
+  const delivery = new DeliveryService(repo, { telegram, email, push }, config.WEB_ORIGIN, log, now, config.ADMIN_TELEGRAM_CHAT_ID ?? null);
   const evaluator = new Evaluator(repo, market, delivery, log, now);
   const poller = overrides.poller === false || !config.POLLER_ENABLED ? null : new Poller(handle.db, repo, market, evaluator, delivery, log, now);
   const providers = defaultProviders({ etherscanApiKey: config.ETHERSCAN_API_KEY, fetchImpl: overrides.fetchImpl });

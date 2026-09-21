@@ -14,6 +14,7 @@ const LOW_REFRESH_EVERY_TICKS = 30;
 const LOWS_PER_RUN = 3;
 const PAUSE_ON_QUOTA_MS = 30 * 60_000;
 const DIGEST_HOUR_UTC = 8;
+const LOW_CREDITS_FRACTION = 0.15;
 
 type LaneName = PollLaneStatus["lane"];
 
@@ -35,6 +36,7 @@ export class Poller {
   private pausedUntil = 0;
   private timer: NodeJS.Timeout | null = null;
   private running = false;
+  private quotaWarnedOn: string | null = null;
   private readonly lanes = new Map<LaneName, LaneState>();
 
   constructor(
@@ -113,12 +115,22 @@ export class Poller {
     try {
       const info = await this.market.cmc.getKeyInfo();
       this.creditLimit = info.creditLimitMonthly;
+      await this.warnIfCreditsLow(info.creditsLeftMonth, info.creditLimitMonthly);
       if (info.rateLimitPerMinute && info.rateLimitPerMinute > 0) this.market.cmc.setRequestsPerMinute(info.rateLimitPerMinute);
     } catch (error) {
       this.log("could not read CMC key info; keeping previous plan limits", error);
     }
     this.plan = planCadence(this.creditLimit, this.workload);
     if (this.plan.verdict === "insufficient") this.log(`CMC plan is too small for the current portfolios even at the slowest cadence (~${this.plan.estimatedCreditsPerMonth} credits/month)`);
+  }
+
+  private async warnIfCreditsLow(left: number | null, limit: number | null): Promise<void> {
+    if (left === null || limit === null || limit <= 0 || left / limit >= LOW_CREDITS_FRACTION) return;
+    const today = this.now().toISOString().slice(0, 10);
+    if (this.quotaWarnedOn === today) return;
+    this.quotaWarnedOn = today;
+    this.log(`CoinMarketCap credits low: ${left} of ${limit} left this month`);
+    await this.delivery.notifyAdmin(`Nemea: CoinMarketCap credits are low, ${left} of ${limit} left this month. Polling will slow or pause when they run out.`);
   }
 
   async tick(): Promise<{ quotesUpdated: number; usersEvaluated: number; alertsCreated: number; skipped: string | null }> {
