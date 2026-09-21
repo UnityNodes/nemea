@@ -217,5 +217,5 @@ export function parsePriceStatsAllTime(body: unknown, id: number): PriceStats | 
   const usd = usdQuote(allTime?.quote);
   const low = num(usd?.low);
   if (low === null) return null;
-  return { lowUsd: low, lowAt: str(usd?.low_timestamp) ?? str(allTime?.low_timestamp) };
+  return { lowUsd: low, lowAt: str(allTime?.low_timestamp) ?? str(usd?.low_timestamp) };
 }

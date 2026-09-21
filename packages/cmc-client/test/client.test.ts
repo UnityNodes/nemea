@@ -133,6 +133,13 @@ describe("error mapping", () => {
     expect((err as CmcPlanError).endpoint).toContain("quotes/historical");
   });
 
+  it("treats an unpaid or expired plan (402) as a key problem, not as a missing endpoint", async () => {
+    const { client } = make(() => json({ status: { error_code: 1003, error_message: "Your API Key subscription plan requires payment." } }, 402));
+    const err = await client.getQuotes([1]).catch((e) => e);
+    expect(err).toBeInstanceOf(CmcAuthError);
+    expect(err).not.toBeInstanceOf(CmcPlanError);
+  });
+
   it("maps a bad key to CmcAuthError", async () => {
     const { client } = make(() => json({ status: { error_code: 1001, error_message: "This API Key is invalid." } }, 401));
     await expect(client.getQuotes([1])).rejects.toBeInstanceOf(CmcAuthError);
@@ -343,6 +350,26 @@ describe("getPriceLow", () => {
   it("uses the all-time low when the plan allows price-performance-stats", async () => {
     const { client } = make(() => json(stats));
     expect(await client.getPriceLow(1)).toEqual({ lowUsd: 65.53, lowAt: "2013-07-05T00:00:00Z", windowDays: null, scope: "all_time" });
+  });
+
+  it("takes the date of the low from the period, not from the quote's reference time", async () => {
+    const both = {
+      status: { error_code: 0 },
+      data: { "1": { id: 1, periods: { all_time: { low_timestamp: "2013-07-05T00:00:00Z", quote: { USD: { low: 65.53, low_timestamp: "2026-09-21T12:00:00Z" } } } } } },
+    };
+    const { client } = make(() => json(both));
+    expect((await client.getPriceLow(1))?.lowAt).toBe("2013-07-05T00:00:00Z");
+  });
+
+  it("asks for a history window that stays inside one year even when the hour has just rolled over", async () => {
+    let seen: URL | null = null;
+    const { client } = make((url) => {
+      seen = url;
+      return json({ status: { error_code: 0 }, data: { "1": { id: 1, quotes: [] } } });
+    }, { now: () => Date.parse("2026-09-21T12:59:00Z") });
+    await client.getHistorical(1, { days: 365, interval: "daily" });
+    const start = Date.parse(seen!.searchParams.get("time_start")!);
+    expect(Date.parse("2026-09-21T12:59:00Z") - start).toBeLessThan(365 * 24 * 3600_000);
   });
 
   it("falls back to a labelled window low when the plan forbids it, and stops retrying the forbidden endpoint", async () => {

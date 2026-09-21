@@ -180,11 +180,11 @@ export class CmcClient {
       this.counters.rateLimited += 1;
       throw new CmcRateLimitError(`CMC ${path} rate limited: ${message}`, classifyRateScope(message, errorCode), retryAfterMs(res.headers), res.status, errorCode);
     }
-    if (res.status === 401 || errorCode === 1001 || errorCode === 1002 || errorCode === 1005 || errorCode === 1007) {
+    if (res.status === 401 || res.status === 402 || errorCode === 1001 || errorCode === 1002 || errorCode === 1003 || errorCode === 1004 || errorCode === 1005 || errorCode === 1007) {
       this.counters.failed += 1;
       throw new CmcAuthError(`CMC ${path} rejected the API key: ${message}`, res.status, errorCode);
     }
-    if (res.status === 402 || res.status === 403 || errorCode === 1003 || errorCode === 1004 || errorCode === 1006) {
+    if (res.status === 403 || errorCode === 1006) {
       this.counters.planRestricted += 1;
       throw new CmcPlanError(`CMC ${path} is not available on this plan: ${message}`, path, res.status, errorCode);
     }
@@ -264,7 +264,7 @@ export class CmcClient {
     const end = this.now();
     const bucket = 3600_000;
     const alignedEnd = Math.floor(end / bucket) * bucket;
-    const start = alignedEnd - opts.days * 24 * 3600_000;
+    const start = alignedEnd - opts.days * 24 * 3600_000 + 2 * 3600_000;
     return this.cache.getOrLoad(`hist:${id}:${opts.days}:${opts.interval}:${alignedEnd}`, this.ttl.historical, async () => {
       const body = await this.call(ENDPOINTS.quotesHistorical, {
         id,
