@@ -26,19 +26,19 @@ export function VerifyEmail() {
       {!token ? (
         <>
           <MailX className="size-8 text-crit-text" aria-hidden />
-          <h1 className="display mt-3 text-4xl">This link is incomplete</h1>
+          <h1 className="display mt-3 text-3xl">This link is incomplete</h1>
           <p className="mt-2 text-muted">The confirmation token is missing. Open the link from your email again, or request a new one in Settings.</p>
         </>
       ) : verify.isSuccess ? (
         <>
           <MailCheck className="size-8 text-primary" aria-hidden />
-          <h1 className="display mt-3 text-4xl">Email confirmed</h1>
+          <h1 className="display mt-3 text-3xl">Email confirmed</h1>
           <p className="mt-2 text-muted">Nemea can now send alerts to this address. You can change or remove it in Settings at any time.</p>
         </>
       ) : verify.isError ? (
         <>
           <MailX className="size-8 text-crit-text" aria-hidden />
-          <h1 className="display mt-3 text-4xl">That did not work</h1>
+          <h1 className="display mt-3 text-3xl">That did not work</h1>
           <p role="alert" className="mt-2 text-muted">
             {errorMessage(verify.error)}
           </p>

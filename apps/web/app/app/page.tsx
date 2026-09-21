@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
 import { Dashboard } from "@/components/dashboard";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Dashboard", robots: { index: false } };
+export const metadata = pageMetadata("app");
 
 export default function AppPage() {
   return <Dashboard />;

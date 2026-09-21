@@ -63,7 +63,7 @@ export function ProtectSection({ alertId, level }: { alertId: string; level: num
   return (
     <section id="protect" aria-labelledby="protect-heading" className="scroll-mt-24">
       <div className="rounded-[var(--radius-panel)] border border-line bg-surface p-5 shadow-[var(--shadow-soft)] sm:p-7">
-        <h2 id="protect-heading" className="display flex items-center gap-3 text-3xl sm:text-4xl">
+        <h2 id="protect-heading" className="display flex items-center gap-3 text-2xl sm:text-3xl">
           <ShieldCheck className="size-8 shrink-0 text-primary" aria-hidden />
           If you want to act
         </h2>

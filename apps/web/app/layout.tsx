@@ -1,21 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Figtree, JetBrains_Mono } from "next/font/google";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import { Providers } from "@/components/providers";
+import { DEFAULT_TITLE, pageMetadata, siteBase } from "@/lib/site";
 import "./globals.css";
 
-const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600", "700"], style: ["normal", "italic"], variable: "--font-cormorant", display: "swap" });
-const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap" });
-
-const title = "Nemea | Calm protection for your crypto";
-const description = "Nemea watches your crypto with CoinMarketCap data and tells you calmly when something looks wrong. Non-custodial, not a trading bot, not financial advice.";
-
 export const metadata: Metadata = {
-  title: { default: title, template: "%s | Nemea" },
-  description,
+  metadataBase: siteBase(),
+  title: { default: DEFAULT_TITLE, template: "%s | Nemea" },
   applicationName: "Nemea",
-  openGraph: { title, description, siteName: "Nemea", type: "website", locale: "en_US" },
-  twitter: { card: "summary", title, description },
+  ...pageMetadata("home"),
 };
 
 export const viewport: Viewport = {
@@ -30,7 +24,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${figtree.variable} ${cormorant.variable} ${jetbrains.variable}`}>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body>
         <a
           href="#main"

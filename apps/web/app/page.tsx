@@ -41,8 +41,8 @@ export default function LandingPage() {
         <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 pb-14 pt-10 sm:px-6 lg:grid-cols-[1.12fr_0.88fr] lg:gap-14 lg:pb-20 lg:pt-14">
           <Reveal>
             <p className="text-base font-semibold text-safe-text">Not a trading bot. Insurance against being offline.</p>
-            <h1 className="display mt-5 text-[clamp(2.9rem,7.4vw,5.1rem)]">
-              The lion was invincible. <em className="pb-1 font-medium italic">Then it wasn&rsquo;t.</em>
+            <h1 className="display mt-5 text-[clamp(2.4rem,5.6vw,4.2rem)]">
+              The lion was invincible. <em className="not-italic text-primary">Then it wasn&rsquo;t.</em>
             </h1>
             <p className="mt-6 max-w-[34rem] text-lg text-muted">Nemea watches your crypto while you are offline and calmly tells you when something looks wrong.</p>
             <div className="mt-8">
@@ -51,14 +51,14 @@ export default function LandingPage() {
           </Reveal>
           <div className="mx-auto w-full max-w-[21rem] lg:max-w-[25rem]">
             <ValleyArt className="h-auto w-full" />
-            <p className="mt-3 text-center font-display text-lg italic leading-snug text-muted">The valley of Nemea, where Heracles beat the lion no weapon could hurt.</p>
+            <p className="mt-4 text-center text-sm leading-snug text-muted">The valley of Nemea, where Heracles beat the lion no weapon could hurt.</p>
           </div>
         </section>
 
         <section id="how" className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_1.05fr] lg:gap-16 lg:py-20">
           <div>
             <Reveal>
-              <h2 className="display text-4xl sm:text-5xl">How it works</h2>
+              <h2 className="display text-3xl sm:text-4xl">How it works</h2>
             </Reveal>
             <ol className="mt-8 flex flex-col gap-8">
               {steps.map((step, index) => (
@@ -84,7 +84,7 @@ export default function LandingPage() {
         <section id="limits" className="bg-band text-on-band">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:py-20">
             <Reveal>
-              <h2 className="display max-w-3xl text-4xl sm:text-5xl">Nemea only promises what it can keep.</h2>
+              <h2 className="display max-w-3xl text-3xl sm:text-4xl">Nemea only promises what it can keep.</h2>
             </Reveal>
             <ul className="mt-10 grid gap-8 lg:grid-cols-3 lg:gap-10">
               {limits.map((limit, index) => (
@@ -105,7 +105,7 @@ export default function LandingPage() {
 
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
           <Reveal>
-            <h2 className="display max-w-3xl text-4xl sm:text-6xl">Look after it while you live your life.</h2>
+            <h2 className="display max-w-3xl text-3xl sm:text-5xl">Look after it while you live your life.</h2>
             <p className="mt-5 max-w-xl text-lg text-muted">Begin with a sample portfolio, or add your own coins. No keys to hand over, nothing to install.</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <StartGuestButton />

@@ -311,7 +311,7 @@ export function StatusView() {
   return (
     <div className="flex flex-col gap-14">
       <header>
-        <h1 className="display text-[clamp(2.6rem,6vw,4.2rem)]">System status</h1>
+        <h1 className="display text-[clamp(2.2rem,5vw,3.4rem)]">System status</h1>
         <p className="mt-3 max-w-2xl text-lg text-muted">Where Nemea&apos;s data comes from, what it costs, and proof of every call. No login needed.</p>
         <p className="mt-3 flex items-center gap-2 text-sm text-muted" aria-live="polite">
           <RefreshCw className={`size-4 ${query.isFetching ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden />

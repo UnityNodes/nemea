@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
 import { AlertDetail } from "@/components/alert-detail";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Alert", robots: { index: false } };
+export const metadata = pageMetadata("alert");
 
 export default async function AlertPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

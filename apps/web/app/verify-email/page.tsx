@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Wordmark } from "@/components/logo";
 import { VerifyEmail } from "@/components/verify-email";
 import { Skeleton } from "@/components/ui/skeleton";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Confirm your email", robots: { index: false } };
+export const metadata = pageMetadata("verify-email");
 
 export default function VerifyEmailPage() {
   return (

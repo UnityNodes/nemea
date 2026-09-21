@@ -36,7 +36,7 @@ export function SessionGate({ children }: { children: (me: MeView) => ReactNode 
     return (
       <div className="mx-auto mt-6 max-w-lg rounded-[var(--radius-panel)] border border-line bg-surface p-6 shadow-[var(--shadow-soft)] sm:p-8">
         <KeyRound className="size-7 text-primary" aria-hidden />
-        <h1 className="display mt-3 text-4xl">Pick up where you left off</h1>
+        <h1 className="display mt-3 text-3xl">Pick up where you left off</h1>
         <p className="mt-2 text-muted">There is no active session in this browser, or it has ended. Start as a guest to look around, or sign in with a wallet to keep your portfolio.</p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <StartGuestButton size="md" />

@@ -11,7 +11,7 @@ Behind Cloudflare, Caddy and systemd on the Unity Nodes box, as the sibling proj
 | Postgres | Docker container `nemea-postgres` (`postgres:16-alpine`), volume `nemea-pgdata`, published on `127.0.0.1:5440` only, `restart unless-stopped` |
 | API and poller | `nemea-api.service`, `127.0.0.1:4090`, runs `apps/api/src/index.ts` with tsx |
 | Bot | `nemea-bot.service`, health on `127.0.0.1:4190`, runs `apps/bot/src/index.ts` |
-| Web | `nemea-web.service`, `next start` on `127.0.0.1:3090`; the API address is baked into the build (`API_ORIGIN=http://127.0.0.1:4090 pnpm --filter @nemea/web build`) |
+| Web | `nemea-web.service`, `next start` on `127.0.0.1:3090`; the API address is baked into the build (`API_ORIGIN=http://127.0.0.1:4090 PUBLIC_WEB_URL=https://nemea.unitynodes.com pnpm --filter @nemea/web build`); `PUBLIC_WEB_URL` is also the base of the link-preview images, and the build fails without it |
 | Units | `User=claude`, `Restart=on-failure`, the same hardening as `tessera-web.service`. Each service was killed with `kill -9` once and came back. |
 | Caddy | site block `nemea.unitynodes.com` with the Cloudflare origin certificate, `nextjs_headers`, no-cache on documents, `reverse_proxy localhost:3090` |
 | Env | `/root/nemea/.env.production` (git-ignored, mode 600), read with `--env-file`. `PORT` comes from each unit. |

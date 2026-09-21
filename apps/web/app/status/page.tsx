@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
 import { MarketingHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { StatusView } from "@/components/status-view";
+import { pageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "System status",
-  description: "How Nemea gets its market data, what the data plan allows, how often each check runs, and a live log of every CoinMarketCap call.",
-};
+export const metadata = pageMetadata("status");
 
 export default function StatusPage() {
   return (

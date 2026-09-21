@@ -29,7 +29,7 @@ export function Wordmark({ className, href = "/" }: { className?: string; href?:
   return (
     <Link href={href} className={cn("group inline-flex min-h-11 items-center gap-2.5 rounded-lg", className)} aria-label="Nemea home">
       <LogoMark className="size-8 transition-transform duration-500 ease-[var(--ease-calm)] group-hover:rotate-[15deg] motion-reduce:transition-none" />
-      <span className="display text-[1.65rem] leading-none text-ink">Nemea</span>
+      <span className="display text-[1.4rem] leading-none text-ink">Nemea</span>
     </Link>
   );
 }

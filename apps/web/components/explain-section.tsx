@@ -32,7 +32,7 @@ export function ExplainSection({ id }: { id: string }) {
     <section aria-labelledby="eli5-heading" className="scroll-mt-24">
       <div className="flex flex-col gap-4 rounded-[var(--radius-panel)] border border-line bg-surface p-5 shadow-[var(--shadow-soft)] sm:p-7">
         <div>
-          <h2 id="eli5-heading" className="display text-3xl sm:text-4xl">
+          <h2 id="eli5-heading" className="display text-2xl sm:text-3xl">
             Not sure what this means?
           </h2>
           <p className="mt-2 max-w-xl text-muted">A calm, plain-language explanation of what happened, what it usually means, and what Nemea could not see.</p>
@@ -66,7 +66,7 @@ export function ExplainSection({ id }: { id: string }) {
                   </div>
                 ) : explain.data ? (
                   <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-7 pt-5">
-                    <motion.h3 variants={item} className="display text-[clamp(1.9rem,4.4vw,2.9rem)]">
+                    <motion.h3 variants={item} className="display text-[clamp(1.6rem,3.6vw,2.4rem)]">
                       {explain.data.explanation.headline}
                     </motion.h3>
                     {explain.data.explanation.sections.map((section) => (

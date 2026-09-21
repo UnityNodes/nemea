@@ -53,7 +53,7 @@ function DetailBody({ id, level }: { id: string; level: number }) {
     const missing = alert.error instanceof ApiClientError && alert.error.status === 404;
     return (
       <div role="alert" className="max-w-lg rounded-[var(--radius-panel)] border border-line bg-surface p-6">
-        <h1 className="display text-4xl">{missing ? "That alert is gone" : "The alert could not be loaded"}</h1>
+        <h1 className="display text-3xl">{missing ? "That alert is gone" : "The alert could not be loaded"}</h1>
         <p className="mt-2 text-muted">{errorMessage(alert.error)}</p>
         <div className="mt-5 flex gap-3">
           {!missing ? (
@@ -93,7 +93,7 @@ function DetailBody({ id, level }: { id: string; level: number }) {
             {relativeTime(data.alert.createdAt, now)}
           </time>
         </div>
-        <h1 className="display mt-4 max-w-3xl text-[clamp(2.2rem,5.4vw,3.6rem)]">{data.alert.title}</h1>
+        <h1 className="display mt-4 max-w-3xl text-[clamp(1.9rem,4.4vw,3rem)]">{data.alert.title}</h1>
         <p className="mt-3 max-w-2xl text-lg text-muted">{data.alert.summary}</p>
         {data.alert.simulated ? <p className="mt-3 max-w-2xl rounded-[var(--radius-control)] bg-sunken p-3 text-sm text-muted">This alert came from a simulation. The alert engine and your holdings are real, but the price move was made up.</p> : null}
         {data.alert.facts.length > 0 ? (
