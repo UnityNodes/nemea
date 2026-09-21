@@ -11,3 +11,4 @@ coverage
 .turbo
 next-env.d.ts
 tsconfig.tsbuildinfo
+.playwright-mcp
