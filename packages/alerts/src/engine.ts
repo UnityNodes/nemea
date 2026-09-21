@@ -30,15 +30,7 @@ export const COOLDOWN_MS: Record<AlertKind, number> = {
 };
 
 export const CRITICAL_PER_DAY_CAP = 3;
-export const MAX_CATEGORY_AGE_MS = 6 * HOUR;
 
-export function freshCategories(categories: EngineInput["categories"], now: Date): EngineInput["categories"] {
-  return categories.filter((c) => {
-    if (c.cmcLastUpdated === null) return true;
-    const t = Date.parse(c.cmcLastUpdated);
-    return Number.isFinite(t) && now.getTime() - t <= MAX_CATEGORY_AGE_MS;
-  });
-}
 const WEEK = 7 * DAY;
 
 export function quoteAgeMs(quote: QuoteSnapshot, now: Date): number {
@@ -60,8 +52,7 @@ function latestFor(past: readonly PastAlert[], dedupeKey: string): PastAlert | n
   return latest;
 }
 
-export function evaluate(raw: EngineInput): EngineOutput {
-  const input: EngineInput = { ...raw, categories: freshCategories(raw.categories, raw.now) };
+export function evaluate(input: EngineInput): EngineOutput {
   const suppressed: Suppressed[] = [];
   const rows = priceRows(input.holdings, input.quotes);
   const freshQuotes = new Map<number, QuoteSnapshot>();

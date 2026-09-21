@@ -92,7 +92,7 @@ Real friction from building this, so the next builder does not lose the time:
 - **No all-time low in quotes.** It exists only in `price-performance-stats`, which the pricing matrix does not list for Basic or Builder. Nemea falls back to a labelled 365-day low.
 - **Info by contract address** can return another chain's `platform.token_address`; wallet tokens are matched on `contract_address[]` by chain and address instead.
 - **No liquidity or order-book data** in the basic data, so "sudden liquidity drop" is a volume dry-up proxy and says so.
-- **Category timestamps.** Some categories carry a stale `last_updated` (one shows 2021). Categories older than 6 hours are ignored, so a dead category never explains or triggers anything.
+- **Category timestamps.** `last_updated` on categories is a metadata date (348 of 359 are older than 30 days) while the averages are live, so it cannot be used as a freshness check. Nemea does not use it.
 
 ## Roadmap
 

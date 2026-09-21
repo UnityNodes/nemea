@@ -36,7 +36,8 @@ Data gaps that come from the plan, not from a bug:
 - **All-time low** exists only in `/v2/cryptocurrency/price-performance-stats/latest`, which CoinMarketCap's pricing matrix does not list for Basic or Builder. Without it Nemea uses the lowest daily close in up to 365 days and labels the alert "365-day low", never "all-time low".
 - **Liquidity** (order-book depth) is not in the basic data. "Sudden liquidity drop" is implemented as a volume dry-up while the price falls, and the alert text says it is a proxy.
 - **History for Explain** needs the historical endpoint. If the plan or the rate limit blocks it, the explanation says so under "What we couldn't check" and omits the "Has this happened before?" section instead of guessing.
-- **Stale data**: a quote whose CoinMarketCap `last_updated` is older than 30 minutes produces no alert, and the dashboard marks it stale. A category whose `last_updated` is older than 6 hours is ignored (some categories carry timestamps from 2021). A category with no timestamp is used.
+- **Category `last_updated` is not a freshness signal**: measured 2026-09-21, 348 of 359 categories had a `last_updated` older than 30 days while their averages moved minute to minute. Nemea does not use it, and category averages are treated as live.
+- **Stale data**: a quote whose CoinMarketCap `last_updated` is older than 30 minutes produces no alert, and the dashboard marks it stale.
 
 ## 2. Not financial advice
 
