@@ -254,6 +254,33 @@ describe("other endpoints", () => {
     ]);
   });
 
+  it("looks up many symbols in one call and keeps every coin that shares a symbol, leaving the matching to the caller", async () => {
+    const { client, calls } = make(() =>
+      json({
+        status: { error_code: 0, credit_count: 1 },
+        data: {
+          USDC: [{ id: 3408, name: "USDC", symbol: "USDC", slug: "usd-coin", tags: ["stablecoin"], contract_address: [{ contract_address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", platform: { name: "Ethereum" } }] }],
+          PEPE: [
+            { id: 24478, name: "Pepe", symbol: "PEPE", slug: "pepe", tags: [], contract_address: [{ contract_address: "0x6982508145454Ce325dDbE47a25d4ec3d2311933", platform: { name: "Ethereum" } }] },
+            { id: 99, name: "Fake Pepe", symbol: "PEPE", slug: "fake-pepe", tags: [], contract_address: [{ contract_address: "0xdead", platform: { name: "Ethereum" } }] },
+          ],
+          ZZZ: [],
+        },
+      }),
+    );
+    const metas = await client.getInfoBySymbols(["usdc", "PEPE", "zzz", "bad symbol!", "USDC"]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.searchParams.get("symbol")).toBe("PEPE,USDC,ZZZ");
+    expect(calls[0]?.searchParams.get("skip_invalid")).toBe("true");
+    expect(metas.map((m) => m.cmcId).sort((a, b) => a - b)).toEqual([99, 3408, 24478]);
+  });
+
+  it("splits a long symbol list into requests of 25", async () => {
+    const { client, calls } = make(() => json({ status: { error_code: 0 }, data: {} }));
+    await client.getInfoBySymbols(Array.from({ length: 60 }, (_, i) => `T${i}`));
+    expect(calls.map((c) => (c.searchParams.get("symbol") ?? "").split(",").length)).toEqual([25, 25, 10]);
+  });
+
   it("rejects a symbol that could smuggle query params", async () => {
     const { client, calls } = make(() => json({ status: { error_code: 0 }, data: {} }));
     await expect(client.getInfoBySymbol("ETH&convert=EUR")).rejects.toThrow();

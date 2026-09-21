@@ -68,6 +68,7 @@ export const DEFAULT_TTL_MS = {
 };
 
 export const MAX_IDS_PER_REQUEST = 100;
+export const SYMBOLS_PER_REQUEST = 25;
 
 export type ClientCounters = {
   requests: number;
@@ -259,6 +260,20 @@ export class CmcClient {
       const body = await this.call(ENDPOINTS.info, { symbol: clean, skip_invalid: true });
       return parseInfo(body, new Date(this.now()).toISOString());
     });
+  }
+
+  async getInfoBySymbols(symbols: readonly string[]): Promise<TokenMeta[]> {
+    const clean = [...new Set(symbols.map((x) => x.trim().toUpperCase()).filter((x) => /^[A-Z0-9._-]{1,20}$/.test(x)))].sort();
+    const out: TokenMeta[] = [];
+    for (let i = 0; i < clean.length; i += SYMBOLS_PER_REQUEST) {
+      const chunk = clean.slice(i, i + SYMBOLS_PER_REQUEST);
+      const metas = await this.cache.getOrLoad(`info:syms:${chunk.join(",")}`, this.ttl.info, async () => {
+        const body = await this.call(ENDPOINTS.info, { symbol: chunk.join(","), skip_invalid: true });
+        return parseInfo(body, new Date(this.now()).toISOString());
+      });
+      out.push(...metas);
+    }
+    return out;
   }
 
   async getGlobalMetrics(): Promise<GlobalMetricsSnapshot> {

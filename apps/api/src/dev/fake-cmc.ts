@@ -157,7 +157,11 @@ export function createFakeCmc(opts: { now?: () => Date } = {}): FakeCmc {
       case "/v2/cryptocurrency/info": {
         let found: Coin[] = [];
         if (params.id) found = ids.map((id) => state.get(id)).filter((c): c is Coin => !!c);
-        else if (params.symbol) found = [...state.values()].filter((c) => c.symbol.toUpperCase() === params.symbol?.toUpperCase());
+        else if (params.symbol) {
+          const wanted = params.symbol.split(",").map((x) => x.toUpperCase());
+          const bySymbol = Object.fromEntries(wanted.map((sym) => [sym, [...state.values()].filter((c) => c.symbol.toUpperCase() === sym).map(infoEntry)]));
+          return json({ status: status(), data: bySymbol });
+        }
         else if (params.address) {
           const wanted = new Set(params.address.split(",").map((a) => a.toLowerCase()));
           found = [...state.values()].filter((c) => c.contracts.some((k) => wanted.has(k.address.toLowerCase())));

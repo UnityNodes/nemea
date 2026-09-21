@@ -19,10 +19,11 @@ The product spec asks for a one-minute stablecoin check. That costs about 43,200
 | Plan | Depeg check | Top holdings | Small holdings | Global | Est. credits/month | Verdict |
 |---|---|---|---|---|---|---|
 | Basic (free) | every 4 min | every 4 min | every 4 min | every 60 min | 11,880 | stretched |
-| Builder | every 1 min | every 5 min | every 30 min | every 15 min | 47,520 | fits |
-| Startup | every 1 min | every 5 min | every 30 min | every 15 min | 47,520 | fits |
+| Builder | every 1 min | every 1 min | every 1 min | every 15 min | 47,520 | fits |
+| Startup | every 1 min | every 1 min | every 1 min | every 15 min | 47,520 | fits |
 
-- One quotes call covers up to 100 coins for one credit, so holdings ride along on the depeg poll for free. Tiers (top every 5 minutes, small every 30) only save credits once there are more than 100 distinct coins across all users. The planner collapses them when they save nothing.
+- One quotes call covers up to 100 coins for one credit, so every held coin rides along on the depeg poll for free. The spec's tiers (top holdings every 5 minutes, small every 30) only save credits once there are more than 100 distinct coins across all users; below that the planner polls everything at the depeg cadence, and above it the tiers apply. `pnpm cadence` prints the table for a small workload.
+- "Stale" is measured against the plan: a quote is stale when it is older than twice the slowest quote cadence (never less than 30 minutes).
 - 15% of the budget is held back for on-demand calls (token lookup, history for Explain, wallet import).
 - When CoinMarketCap answers with a daily or monthly quota error, polling pauses for 30 minutes and `/status` says so.
 - On-demand calls a visitor can trigger are capped so a burst of visitors cannot burn the credit budget: token lookups 600 per hour, Explain 300 per hour, wallet imports 120 per hour across everyone, plus per-user caps. When a cap is hit the user sees a "too many requests" message (`apps/api/test/api.test.ts`, "credit protection").
@@ -37,7 +38,8 @@ Data gaps that come from the plan, not from a bug:
 - **Liquidity** (order-book depth) is not in the basic data. "Sudden liquidity drop" is implemented as a volume dry-up while the price falls, and the alert text says it is a proxy.
 - **History for Explain** needs the historical endpoint. If the plan or the rate limit blocks it, the explanation says so under "What we couldn't check" and omits the "Has this happened before?" section instead of guessing.
 - **Category `last_updated` is not a freshness signal**: measured 2026-09-21, 348 of 359 categories had a `last_updated` older than 30 days while their averages moved minute to minute. Nemea does not use it, and category averages are treated as live.
-- **Stale data**: a quote whose CoinMarketCap `last_updated` is older than 30 minutes produces no alert, and the dashboard marks it stale.
+- **Explain and swap links use a quote only when it is fresh.** A swap target (the stablecoin you would move into) must have a fresh quote that is on peg, and "since the alert" is shown only from a fresh quote.
+- **Stale data**: a quote whose CoinMarketCap `last_updated` is older than the stale limit above produces no alert, and the dashboard marks it stale. If any held coin is stale or unpriced, no portfolio-level alert is sent, because a percentage of a partly unknown portfolio would be wrong. The market snapshot and the category list are ignored when Nemea's own poller has not refreshed them for 2 hours.
 
 ## 2. Not financial advice
 

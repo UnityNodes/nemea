@@ -3,9 +3,12 @@ import { CHAINS, EvmAddress, type Chain, type TokenMeta, type WalletImportPrevie
 import { ChainReadError, NATIVE_CMC_ID, NATIVE_NAME, NATIVE_SYMBOL, type BalanceProvider, type RawBalance } from "./types.ts";
 
 export const UNLISTED_REASON = "Not listed on CoinMarketCap — usually airdrop spam, ignored";
+export const NO_SYMBOL_REASON = "No usable token symbol, ignored";
 export const MIN_HINT_VALUE_USD = 1;
 export const MAX_PRICED_TOKENS_PER_CHAIN = 60;
 export const MAX_UNPRICED_TOKENS_PER_CHAIN = 40;
+
+const LOOKUP_SYMBOL = /^[A-Za-z0-9._-]{1,20}$/;
 
 const FALL_THROUGH_KINDS: ReadonlySet<string> = new Set(["plan_unsupported", "network", "timeout", "rate_limited"]);
 
@@ -13,7 +16,7 @@ export type ReadWalletOptions = {
   address: string;
   chains: Chain[];
   providers: Record<Chain, BalanceProvider[]>;
-  cmc: Pick<CmcClient, "getInfoByAddresses">;
+  cmc: Pick<CmcClient, "getInfoBySymbols">;
 };
 
 type ChainOutcome = { chain: Chain; balances: RawBalance[]; hinted: boolean; error: string | null };
@@ -117,10 +120,17 @@ export async function readWallet(opts: ReadWalletOptions): Promise<WalletImportP
     for (const reason of notes) preview.skipped.push({ chain: outcome.chain, contractAddress: null, symbol: null, reason });
   }
 
-  if (tokens.length > 0) {
-    const metas = await opts.cmc.getInfoByAddresses([...new Set(tokens.map((t) => t.contract))]);
+  const lookable: Candidate[] = [];
+  for (const token of tokens) {
+    if (typeof token.balance.symbol === "string" && LOOKUP_SYMBOL.test(token.balance.symbol)) lookable.push(token);
+    else preview.skipped.push({ chain: token.chain, contractAddress: token.contract, symbol: token.balance.symbol, reason: NO_SYMBOL_REASON });
+  }
+
+  if (lookable.length > 0) {
+    const symbols = [...new Set(lookable.map((t) => (t.balance.symbol as string).toUpperCase()))];
+    const metas = await opts.cmc.getInfoBySymbols(symbols);
     const index = indexByContract(metas);
-    for (const { chain, balance, contract } of tokens) {
+    for (const { chain, balance, contract } of lookable) {
       const meta = index.get(contractKey(chain, contract));
       if (meta) {
         preview.items.push({ cmcId: meta.cmcId, symbol: meta.symbol, name: meta.name, amount: balance.amount, chain, contractAddress: contract });

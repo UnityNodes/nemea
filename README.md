@@ -62,10 +62,10 @@ Alert fatigue is a design constraint: at most 3 non-critical alerts a week (you 
 
 | Endpoint | Used for | When |
 |---|---|---|
-| `/v3/cryptocurrency/quotes/latest` | prices, 1 h / 24 h / 7 d / 30 d change, volume and volume change | every poll, batched to 100 coins per call |
+| `/v3/cryptocurrency/quotes/latest` | prices, 1 h / 24 h / 7 d / 30 d change, volume and volume change | every minute on a large plan (every 4 minutes on the free plan), batched to 100 coins per call |
 | `/v3/cryptocurrency/quotes/historical` | "similar drops recovered in X days", peg history, 365-day low | on demand (Explain), cached 6 h |
 | `/v1/global-metrics/quotes/latest` | market-wide move, dominance | every 15 min on a large plan |
-| `/v2/cryptocurrency/info` | tags, category, contract addresses per chain (matches wallet tokens by chain and address) | once per coin, then stored |
+| `/v2/cryptocurrency/info` | tags with groups, contract addresses per chain (wallet tokens are looked up by symbol, then matched by exact chain and contract address) | once per coin, then stored; once per wallet import |
 | `/v1/cryptocurrency/categories` | category averages for "because Layer 1 is down X%" and rotation | every 30 min on a large plan |
 | `/v2/cryptocurrency/price-performance-stats/latest` | all-time low, when the plan allows | in the background for your largest holdings, cached 24 h; falls back to historical when the plan does not allow it |
 | `/v1/key/info` | plan limits, so the polling budget is computed, not assumed | at start and hourly |
@@ -92,6 +92,9 @@ Real friction from building this, so the next builder does not lose the time:
 - **No all-time low in quotes.** It exists only in `price-performance-stats`, which the pricing matrix does not list for Basic or Builder. Nemea falls back to a labelled 365-day low.
 - **Info by contract address** can return another chain's `platform.token_address`; wallet tokens are matched on `contract_address[]` by chain and address instead.
 - **No liquidity or order-book data** in the basic data, so "sudden liquidity drop" is a volume dry-up proxy and says so.
+- **`info` by contract address is fragile.** Any unknown address in a batch makes the whole call HTTP 500 even with `skip_invalid=true`, and checksum-cased addresses return 400 or 500. Wallet tokens are matched through `info?symbol=` (unknown symbols return an empty list) and then by exact chain and contract address.
+- **Invalid ids in `quotes/latest` are silently omitted**, but a request where every id is invalid is HTTP 400 with `credit_count` 0. `status.error_code` is a string on some endpoints and a number on others.
+- **Tags are not ordered by relevance.** Bitcoin's first tag that matches a category is an investor portfolio bucket ("Coinbase Ventures Portfolio"), Chainlink's is "Cosmos Ecosystem". About 65 of the 359 categories are investor, regulatory or estate buckets and most `*-ecosystem` categories are platforms, so Nemea uses `tag-groups`, drops those, and explains a move through a thematic category (captured fixture and test: `packages/alerts/test/categories.test.ts`).
 - **Category timestamps.** `last_updated` on categories is a metadata date (348 of 359 are older than 30 days) while the averages are live, so it cannot be used as a freshness check. Nemea does not use it.
 
 ## Roadmap
