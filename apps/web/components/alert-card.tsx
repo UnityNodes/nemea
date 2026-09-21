@@ -5,6 +5,7 @@ import { Check, FlaskConical, ShieldCheck, Sparkles } from "lucide-react";
 import type { AlertRecord } from "@nemea/shared-types";
 import { Disclaimer } from "@/components/disclaimer";
 import { SEVERITY } from "@/components/severity";
+import { TokenIcon } from "@/components/token-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -38,7 +39,12 @@ export function AlertCard({ alert, protectionLevel, now, onMarkRead, markingRead
             Simulation
           </Badge>
         ) : null}
-        {alert.symbol ? <Badge tone="neutral">{alert.symbol}</Badge> : null}
+        {alert.symbol ? (
+          <Badge tone="neutral" className="gap-1.5">
+            <TokenIcon cmcId={alert.cmcId} symbol={alert.symbol} size="sm" className="-ml-1 size-4" />
+            {alert.symbol}
+          </Badge>
+        ) : null}
         <span className="ml-auto flex items-center gap-2 text-xs text-muted">
           {unread ? (
             <span className="inline-flex items-center gap-1.5 font-semibold text-safe-text">

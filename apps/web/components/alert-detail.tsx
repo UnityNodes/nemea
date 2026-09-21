@@ -9,6 +9,7 @@ import { ProtectSection } from "@/components/protect-section";
 import { SEVERITY } from "@/components/severity";
 import { SessionGate } from "@/components/session-gate";
 import { AppHeader } from "@/components/site-header";
+import { TokenIcon } from "@/components/token-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,7 +89,12 @@ function DetailBody({ id, level }: { id: string; level: number }) {
               Simulation
             </Badge>
           ) : null}
-          {data.alert.symbol ? <Badge tone="neutral">{data.alert.symbol}</Badge> : null}
+          {data.alert.symbol ? (
+            <Badge tone="neutral" className="gap-1.5">
+              <TokenIcon cmcId={data.alert.cmcId} symbol={data.alert.symbol} size="sm" className="-ml-1 size-4" />
+              {data.alert.symbol}
+            </Badge>
+          ) : null}
           <time dateTime={data.alert.createdAt} title={formatDateTime(data.alert.createdAt)} className="text-sm text-muted">
             {relativeTime(data.alert.createdAt, now)}
           </time>

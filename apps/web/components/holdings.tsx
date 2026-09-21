@@ -8,6 +8,7 @@ import { DeleteHoldingDialog, EditHoldingDialog } from "@/components/holding-dia
 import { Missing } from "@/components/missing";
 import { Pct } from "@/components/pct";
 import { WalletImportDialog } from "@/components/wallet-import-dialog";
+import { TokenIcon } from "@/components/token-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -163,12 +164,17 @@ export function Holdings() {
                   {holdings.map((h) => (
                     <tr key={h.id} className="align-middle">
                       <th scope="row" className="px-4 py-3 text-left font-normal">
-                        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <span className="font-semibold">{h.symbol}</span>
-                          <Origin holding={h} />
-                        </span>
-                        <span className="block max-w-[11rem] truncate text-xs text-muted" title={h.name}>
-                          {h.name}
+                        <span className="flex items-center gap-3">
+                          <TokenIcon cmcId={h.cmcId} symbol={h.symbol} />
+                          <span className="min-w-0">
+                            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="font-semibold">{h.symbol}</span>
+                              <Origin holding={h} />
+                            </span>
+                            <span className="block max-w-[11rem] truncate text-xs text-muted" title={h.name}>
+                              {h.name}
+                            </span>
+                          </span>
                         </span>
                       </th>
                       <td className="num px-3 py-3 text-right">{formatAmount(h.amount)}</td>
@@ -195,12 +201,15 @@ export function Holdings() {
               {holdings.map((h) => (
                 <li key={h.id} className="rounded-[var(--radius-panel)] border border-line bg-surface py-3 pl-4 pr-2">
                   <div className="flex items-start justify-between gap-3 pr-2">
-                    <div className="min-w-0">
-                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="font-semibold">{h.symbol}</span>
-                        <Origin holding={h} />
-                      </p>
-                      <p className="truncate text-sm text-muted">{h.name}</p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <TokenIcon cmcId={h.cmcId} symbol={h.symbol} />
+                      <div className="min-w-0">
+                        <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="font-semibold">{h.symbol}</span>
+                          <Origin holding={h} />
+                        </p>
+                        <p className="truncate text-sm text-muted">{h.name}</p>
+                      </div>
                     </div>
                     <div className="text-right">
                       <p className="num font-semibold">{h.valueUsd === null ? <Missing reason={NO_PRICE} /> : formatUsd(h.valueUsd)}</p>

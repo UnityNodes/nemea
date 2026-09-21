@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { CircleAlert, ShieldCheck, TriangleAlert } from "lucide-react";
 import { CHAINS, CHAIN_LABELS, EvmAddress, type Chain, type WalletImportItem, type WalletImportPreviewView } from "@nemea/shared-types";
+import { TokenIcon } from "@/components/token-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -187,6 +188,7 @@ function PreviewResult({ result, selected, onToggle, onSelectLargest, onClear }:
                   <label className={`flex min-h-11 items-center justify-between gap-3 px-3.5 py-3 ${blocked ? "cursor-not-allowed opacity-55" : "cursor-pointer"} has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-2 has-[:focus-visible]:outline-ring`}>
                     <span className="flex min-w-0 items-center gap-3">
                       <input type="checkbox" checked={checked} disabled={blocked} onChange={() => onToggle(key)} className="size-5 shrink-0 accent-[var(--primary)]" aria-label={`Import ${item.symbol} on ${CHAIN_LABELS[item.chain]}`} />
+                      <TokenIcon cmcId={item.cmcId} symbol={item.symbol} size="sm" />
                       <span className="min-w-0">
                         <span className="block font-semibold">{item.symbol}</span>
                         <span className="block truncate text-xs text-muted">{item.name}</span>

@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Search, TriangleAlert } from "lucide-react";
 import type { TokenLookupCandidate } from "@nemea/shared-types";
+import { TokenIcon } from "@/components/token-icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -89,6 +90,7 @@ function AddCoinForm({ onDone }: { onDone: () => void }) {
                     )}
                   >
                     <input type="radio" name="coin" value={c.cmcId} checked={picked === c.cmcId} onChange={() => setPicked(c.cmcId)} className="size-5 shrink-0 accent-[var(--primary)]" />
+                    <TokenIcon cmcId={c.cmcId} symbol={c.symbol} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-semibold">
                         {c.name} <span className="font-normal text-muted">({c.symbol})</span>
