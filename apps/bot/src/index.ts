@@ -31,8 +31,9 @@ server.on("error", (error) => {
   process.exit(1);
 });
 
-server.listen(config.port, () => {
-  console.log(`[bot] health server listening on :${config.port}`);
+const host = process.env.HOST?.trim() || "0.0.0.0";
+server.listen(config.port, host, () => {
+  console.log(`[bot] health server listening on ${host}:${config.port}`);
 });
 
 let shuttingDown = false;

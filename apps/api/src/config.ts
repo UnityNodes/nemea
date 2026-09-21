@@ -8,6 +8,8 @@ const optionalString = z
 const EnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().min(1).max(65535).default(4000),
+  HOST: z.string().min(1).default("0.0.0.0"),
+  CLIENT_IP_HEADER: optionalString.pipe(z.string().regex(/^[a-zA-Z][a-zA-Z0-9-]*$/, "must be a header name").optional()),
   CMC_API_KEY: z.string().min(8, "CMC_API_KEY is required"),
   CMC_BASE_URL: optionalString.pipe(z.string().url().optional()),
   DATABASE_URL: optionalString,

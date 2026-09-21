@@ -87,6 +87,7 @@ export function createApp(deps: AppDeps): Express {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", deps.config.TRUST_PROXY_HOPS);
+  app.set("client-ip-header", deps.config.CLIENT_IP_HEADER ?? null);
   const webOrigin = new URL(deps.config.WEB_ORIGIN).origin;
 
   app.use((req, res, next) => {

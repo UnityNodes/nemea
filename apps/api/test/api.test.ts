@@ -330,6 +330,20 @@ describe("simulate, explain, actions", () => {
     expect(again.status).toBe(201);
   });
 
+  it("simulates on a coin that can actually be swapped when it can, so the protective step has something to show", async () => {
+    const c = await guest(h);
+    await addHolding(c, BTC, 1);
+    await addHolding(c, ETH, 1);
+    const sim = await c.request("POST", "/alerts/simulate", { scenario: "drop" });
+    expect(sim.body.alert.symbol).toBe("ETH");
+    const only = await guest(h);
+    await addHolding(only, BTC, 1);
+    const fallback = await only.request("POST", "/alerts/simulate", { scenario: "drop" });
+    expect(fallback.body.alert.symbol).toBe("BTC");
+    const chosen = await only.request("POST", "/alerts/simulate", { scenario: "drop", cmcId: BTC });
+    expect(chosen.status).toBe(201);
+  });
+
   it("refuses to simulate something the portfolio cannot support", async () => {
     const c = await guest(h);
     expect((await c.request("POST", "/alerts/simulate", { scenario: "drop" })).body.error.code).toBe("empty_portfolio");
@@ -636,6 +650,35 @@ describe("review hardening", () => {
     await h.close();
     h = await startHarness({ config: { CMC_BASE_URL: "https://pro-api.coinmarketcap.com" } });
     expect((await h.client().request("GET", "/status")).body.dataSource).toEqual({ host: "pro-api.coinmarketcap.com", official: true });
+  });
+});
+
+describe("client address behind a proxy", () => {
+  it("uses the configured header for the client address and keeps limits per real client, not per proxy", async () => {
+    await h.close();
+    h = await startHarness({ config: { CLIENT_IP_HEADER: "x-real-client-ip" } });
+    const ask = (ip?: string) => h.client().request("GET", "/status", undefined, ip ? { "x-real-client-ip": ip } : {});
+    expect((await ask("203.0.113.7")).body.requestIp).toBe("203.0.113.7");
+    expect((await ask("2001:db8::1")).body.requestIp).toBe("2001:db8::1");
+    expect((await ask("203.0.113.7, 10.0.0.1")).body.requestIp).toBe("203.0.113.7");
+    for (let i = 0; i < 20; i++) expect((await h.client().request("POST", "/auth/guest", undefined, { "x-real-client-ip": "198.51.100.1" })).status).toBe(201);
+    expect((await h.client().request("POST", "/auth/guest", undefined, { "x-real-client-ip": "198.51.100.1" })).status).toBe(429);
+    expect((await h.client().request("POST", "/auth/guest", undefined, { "x-real-client-ip": "198.51.100.2" })).status).toBe(201);
+  });
+
+  it("ignores a header that is not an IP address and falls back to the socket address", async () => {
+    await h.close();
+    h = await startHarness({ config: { CLIENT_IP_HEADER: "x-real-client-ip" } });
+    for (const junk of ["not-an-ip", "<script>", "999.1.1.1"]) {
+      const r = (await h.client().request("GET", "/status", undefined, { "x-real-client-ip": junk })).body.requestIp;
+      expect(r, junk).not.toContain(junk);
+      expect(r.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("ignores the header entirely when none is configured, so a client cannot pick its own address", async () => {
+    const r = (await h.client().request("GET", "/status", undefined, { "x-real-client-ip": "203.0.113.7" })).body.requestIp;
+    expect(r).not.toBe("203.0.113.7");
   });
 });
 

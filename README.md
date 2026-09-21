@@ -16,7 +16,7 @@ Details, numbers and the command that checks each claim: [docs/HONEST_LIMITS.md]
 
 ## Try it
 
-Live demo: TODO(owner): deployed URL. Demo account: none needed. Press **Start as guest**, then **Load a sample portfolio**, then **Try an alert**. TODO(owner): confirm this wording after deploy.
+Live demo: https://nemea.unitynodes.com. Demo account: none needed. Press **Start as guest**, then **Load a sample portfolio**, then **Try an alert**.
 
 ### Run it locally
 
@@ -139,7 +139,7 @@ Status on 2026-09-21. "Not run" means exactly that.
 | Telegram delivery | `pnpm gate:c` | **passed 2026-09-21** with a real bot: token accepted, test message accepted by Telegram (message id returned) and confirmed on the owner's phone, and an over-limit message is rejected as expected. No evidence file is committed because it would contain a chat id. The link-code flow between the web app and the bot is covered by tests, not yet exercised end to end against the real bot |
 | Wallet import matched against real CoinMarketCap | `pnpm gate:b` | **passed 2026-09-21** on a public wallet: 78 tokens matched by chain and contract address across Ethereum, Base and Arbitrum, native ETH on all three, unmatched tokens skipped with a reason, evidence in `docs/evidence/gate-b-wallet.json` |
 | Email and browser push | tests with stubs | **not verified** against Resend or a real push service |
-| Deploy on Vercel and Railway | `docs/DEPLOY.md` | **not deployed** |
+| Deployed on the Unity Nodes server behind Cloudflare | `docs/DEPLOY.md`; `curl https://nemea.unitynodes.com/api/health`; each service survives `kill -9` | **live since 2026-09-21**; the live journey (guest, sample portfolio, simulated alert, Explain, swap links) was walked over https |
 
 The gates write `docs/evidence/*.json` on a clean run. Commit those files and this table can change from "not run" to a link.
 

@@ -1,6 +1,6 @@
 import { DISCLAIMER, type AlertRecord, type Explanation, type QuoteSnapshot, type SimulateScenario, type CategorySnapshot } from "@nemea/shared-types";
 import { CmcPlanError, CmcRateLimitError } from "@nemea/cmc-client";
-import { CALM_NOTE, categoryFor, evaluate, explain, findSimilarDrops, priceRows, summarizePegExcursions, totalValue, type Candidate, type EngineInput, type EngineOutput, type PegSummary, type SimilarDropsSummary } from "@nemea/alerts";
+import { CALM_NOTE, NATIVE_CMC_ID, categoryFor, evaluate, explain, findSimilarDrops, priceRows, summarizePegExcursions, totalValue, type Candidate, type EngineInput, type EngineOutput, type PegSummary, type SimilarDropsSummary } from "@nemea/alerts";
 import { HttpError } from "../http.ts";
 import { MAX_QUOTE_AGE_MS } from "../config.ts";
 import type { DeliveryService } from "./delivery/index.ts";
@@ -80,6 +80,8 @@ export class Evaluator {
     const rows = priceRows(input.holdings, input.quotes);
     const byValue = [...rows].filter((r) => r.valueUsd !== null).sort((a, b) => (b.valueUsd as number) - (a.valueUsd as number));
     const nonStable = byValue.filter((r) => !PEGGED_IDS.has(r.holding.cmcId));
+    const swappable = (r: (typeof rows)[number]) => r.holding.cmcId === NATIVE_CMC_ID || r.holding.chain !== null || (input.meta.get(r.holding.cmcId)?.contracts.length ?? 0) > 0;
+    const preferred = nonStable.filter(swappable);
     const quotes = new Map<number, QuoteSnapshot>(input.quotes);
     const stamp = this.now().toISOString();
     const fresh = (q: QuoteSnapshot, patch: Partial<QuoteSnapshot>): QuoteSnapshot => ({ ...q, ...patch, cmcLastUpdated: stamp, fetchedAt: stamp });
@@ -89,7 +91,7 @@ export class Evaluator {
     let wanted: (c: Candidate) => boolean;
 
     if (scenario === "drop" || scenario === "volume_spike") {
-      const target = cmcId !== undefined ? nonStable.find((r) => r.holding.cmcId === cmcId) : nonStable[0];
+      const target = cmcId !== undefined ? nonStable.find((r) => r.holding.cmcId === cmcId) : (preferred[0] ?? nonStable[0]);
       if (!target) throw new HttpError(400, "no_target", "No priced non-stablecoin holding to simulate on. Add a coin such as ETH first.");
       const q = quotes.get(target.holding.cmcId) as QuoteSnapshot;
       if (scenario === "drop") {

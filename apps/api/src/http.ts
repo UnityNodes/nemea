@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import type { NextFunction, Request, Response } from "express";
 import { ZodError, type ZodTypeAny, type z } from "zod";
 
@@ -41,6 +42,12 @@ export function errorHandler(log: (message: string, error: unknown) => void) {
 }
 
 export function clientIp(req: Request): string {
+  const header = req.app.get("client-ip-header") as string | null | undefined;
+  if (header) {
+    const raw = req.headers[header.toLowerCase()];
+    const first = (Array.isArray(raw) ? raw[0] : raw)?.split(",")[0]?.trim();
+    if (first && isIP(first) !== 0) return first;
+  }
   return req.ip ?? req.socket.remoteAddress ?? "unknown";
 }
 

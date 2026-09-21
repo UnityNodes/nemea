@@ -1,6 +1,35 @@
 # Deploy
 
-Web on Vercel, API and bot on Railway, Postgres on Neon or Supabase. Nothing here has been deployed from this repository yet; this is the recipe.
+Two recipes. **Own server** is what is running at https://nemea.unitynodes.com (deployed 2026-09-21). **Vercel and Railway** is the original plan from the spec and has not been deployed from this repository.
+
+## Own server (what is live)
+
+Behind Cloudflare, Caddy and systemd on the Unity Nodes box, as the sibling projects are.
+
+| Piece | How |
+|---|---|
+| Postgres | Docker container `nemea-postgres` (`postgres:16-alpine`), volume `nemea-pgdata`, published on `127.0.0.1:5440` only, `restart unless-stopped` |
+| API and poller | `nemea-api.service`, `127.0.0.1:4090`, runs `apps/api/src/index.ts` with tsx |
+| Bot | `nemea-bot.service`, health on `127.0.0.1:4190`, runs `apps/bot/src/index.ts` |
+| Web | `nemea-web.service`, `next start` on `127.0.0.1:3090`; the API address is baked into the build (`API_ORIGIN=http://127.0.0.1:4090 pnpm --filter @nemea/web build`) |
+| Units | `User=claude`, `Restart=on-failure`, the same hardening as `tessera-web.service`. Each service was killed with `kill -9` once and came back. |
+| Caddy | site block `nemea.unitynodes.com` with the Cloudflare origin certificate, `nextjs_headers`, no-cache on documents, `reverse_proxy localhost:3090` |
+| Env | `/root/nemea/.env.production` (git-ignored, mode 600), read with `--env-file`. `PORT` comes from each unit. |
+| Backups | `scripts/backup-db.sh` from cron at 03:15 to `~/backups/nemea`, 14 days kept, restore drill passed (11 of 11 tables). No off-box copy yet. |
+
+Things that would have gone wrong, and the setting that prevents them:
+
+- **Services must not listen on all interfaces.** With `ufw` off, `0.0.0.0` made the API reachable from the internet. The units set `HOST=127.0.0.1`.
+- **Behind Cloudflare the API sees Cloudflare's address, not the client's**, and Caddy overwrites `X-Forwarded-For`. Caddy copies `CF-Connecting-IP` into `X-Real-Client-IP`, the API reads it (`CLIENT_IP_HEADER=x-real-client-ip`), and per-IP limits then work per visitor. Without this, every visitor behind one Cloudflare edge shares the 20-guests-per-hour limit.
+- **The origin only answers Cloudflare.** The Caddy block returns 403 to any address outside Cloudflare's published ranges (`/ips-v4`, `/ips-v6`, fetched 2026-09-21), so nobody can bypass Cloudflare and forge `CF-Connecting-IP`. If Cloudflare adds ranges, refresh the list.
+- **Do not run `next dev` and `next build` from the same directory.**
+- **One bot per token.** A second process polling the same token (a laptop, a second server) steals updates.
+
+Redeploy after a code change: `pnpm install --frozen-lockfile`, rebuild the web app with the command above, `sudo systemctl restart nemea-api nemea-bot nemea-web`, then `curl https://nemea.unitynodes.com/api/health`.
+
+## Vercel and Railway (from the spec, not deployed)
+
+Web on Vercel, API and bot on Railway, Postgres on Neon or Supabase.
 
 ## Postgres
 
@@ -30,6 +59,8 @@ Create a database and copy its connection string into `DATABASE_URL` on the API.
 | `ADMIN_TELEGRAM_CHAT_ID` | optional | your own chat id; Nemea messages it once a day when CoinMarketCap credits fall below 15% |
 | `TRUST_PROXY_HOPS` | optional | proxy hops in front of the API, default 1. After deploy open `/status` from two networks and check `requestIp` shows your address, not the proxy's; per-IP limits depend on it. |
 | `CMC_BASE_URL` | never in production | overrides the CoinMarketCap host; `/status` shows a warning when it is not `pro-api.coinmarketcap.com` |
+| `HOST` | optional | address to listen on, default `0.0.0.0`; set `127.0.0.1` when a reverse proxy is on the same machine |
+| `CLIENT_IP_HEADER` | optional | header that carries the real client address, set by your own proxy (for example `x-real-client-ip`); ignored unless set, and only used when it holds a valid IP |
 | `POLLER_ENABLED` | optional | `false` turns the poller off |
 
 The API trusts one proxy hop for client IPs (`trust proxy 1`), so run it behind Railway's proxy and not directly on the internet.

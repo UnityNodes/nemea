@@ -13,8 +13,8 @@ const { config } = result;
 const composed = await compose(config);
 await composed.poller?.loadPersistedLanes();
 const app = createApp(composed.deps);
-const server = app.listen(config.PORT, () => {
-  console.log(`[nemea-api] listening on :${config.PORT} (db: ${composed.handle.driver}, poller: ${composed.poller ? "on" : "off"}, telegram: ${composed.deps.telegramConfigured ? "on" : "off"})`);
+const server = app.listen(config.PORT, config.HOST, () => {
+  console.log(`[nemea-api] listening on ${config.HOST}:${config.PORT} (db: ${composed.handle.driver}, poller: ${composed.poller ? "on" : "off"}, telegram: ${composed.deps.telegramConfigured ? "on" : "off"})`);
   composed.poller?.start();
 });
 
