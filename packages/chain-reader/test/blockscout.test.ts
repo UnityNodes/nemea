@@ -319,8 +319,8 @@ describe("BlockscoutProvider failures", () => {
 });
 
 describe("BlockscoutProvider configuration", () => {
-  it("defaults the timeout to 20 seconds and honours an override", () => {
-    expect(new BlockscoutProvider().timeoutMs).toBe(20_000);
+  it("gives a busy wallet thirty seconds before giving up, and honours an override", () => {
+    expect(new BlockscoutProvider().timeoutMs).toBe(30_000);
     expect(new BlockscoutProvider({ timeoutMs: 5 }).timeoutMs).toBe(5);
   });
 

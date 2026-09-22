@@ -9,7 +9,7 @@ export const BLOCKSCOUT_BASE_URLS: Record<Chain, string> = {
   arbitrum: "https://arbitrum.blockscout.com",
 };
 
-export const DEFAULT_TIMEOUT_MS = 20_000;
+export const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_PAGES = 3;
 const MAX_RETRY_AFTER_MS = 2000;
 const MAX_DECIMALS = 255;

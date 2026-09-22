@@ -1,3 +1,4 @@
+import { MAX_RWA_AGE_MS } from "@nemea/alerts";
 import { BASE_TICK_SECONDS, CmcRateLimitError, categoriesDueOnTick, estimateMonthlyCredits, globalDueOnTick, idsDueOnTick, planCadence, type Cadence, type CadencePlan } from "@nemea/cmc-client";
 import { priceRows } from "@nemea/alerts";
 import type { PollLaneStatus } from "@nemea/shared-types";
@@ -13,6 +14,7 @@ const REPLAN_EVERY_TICKS = 60;
 const LOW_REFRESH_EVERY_TICKS = 30;
 const RWA_EVERY_CATEGORY_RUNS = 4;
 const RWA_WATCH_COUNT = 300;
+const RWA_STALE_MARGIN_MS = 3 * 3600_000;
 const LOWS_PER_RUN = 3;
 const PAUSE_ON_QUOTA_MS = 30 * 60_000;
 const DIGEST_HOUR_UTC = 8;
@@ -104,6 +106,16 @@ export class Poller {
     const held = [...this.workload.stablecoinIds, ...this.workload.topIds, ...this.workload.smallIds];
     this.rwaHeld = held.some((id) => index.has(id));
     return this.rwaHeld;
+  }
+
+  private async rwaWentStale(): Promise<boolean> {
+    if (!this.rwaHeld) return false;
+    const index = await this.market.rwaByWrapperId();
+    const oldest = [...index.values()].reduce<number | null>((max, asset) => {
+      const age = this.now().getTime() - Date.parse(asset.fetchedAt);
+      return Number.isFinite(age) && (max === null || age > max) ? age : max;
+    }, null);
+    return oldest !== null && oldest > MAX_RWA_AGE_MS - RWA_STALE_MARGIN_MS;
   }
 
   private async record(lane: LaneName, outcome: { ok: true; items: number } | { ok: false; error: string }): Promise<void> {
@@ -205,7 +217,7 @@ export class Poller {
       } catch (error) {
         await this.record("categories", { ok: false, error: this.handleFailure(error, "categories") });
       }
-      if (this.categoryRuns % RWA_EVERY_CATEGORY_RUNS === 0 && (await this.rwaWorthRefreshing())) {
+      if (((this.categoryRuns % RWA_EVERY_CATEGORY_RUNS === 0 && (await this.rwaWorthRefreshing())) || (await this.rwaWentStale()))) {
         try {
           await this.record("rwa", { ok: true, items: await this.market.refreshRwa(RWA_WATCH_COUNT) });
         } catch (error) {
