@@ -134,7 +134,23 @@ The response, trimmed to Bitcoin and to the fields Nemea reads (the full body wi
 
 ## Screenshots
 
-TODO(owner): captured from a stack on real CoinMarketCap data with `CONFIRM_REAL_DATA=1 BASE_URL=<url> node apps/web/scripts/screenshots.mjs`. Dashboard, Telegram alert, Explain like I'm 5.
+Captured on 2026-09-22 from the live site on real CoinMarketCap data with `CONFIRM_REAL_DATA=1 BASE_URL=https://nemea.unitynodes.com node apps/web/scripts/screenshots.mjs`. The script refuses to run against the development fake, so these cannot be mock data. Every width is in [`docs/screenshots/`](docs/screenshots).
+
+**A portfolio alert that says where the drop came from.** Not "ETH is down" but which sector carried it, from CoinMarketCap's own category averages.
+
+![Nemea dashboard: a portfolio down 18%, with 64% of the drop attributed to Layer 1](docs/screenshots/dashboard-1280.png)
+
+**Explain like I'm 5.** Deterministic, no language model: the same alert in plain words, including what Nemea could not check.
+
+![Explain like I'm 5: your portfolio dropped 18% because Layer 1 is down 20% across the market](docs/screenshots/alert-eli5-1280.png)
+
+**Protective action, level 2.** A swap link you open and approve yourself. Nemea never signs anything.
+
+![Protection level 2: a prepared swap idea with Uniswap and 1inch links](docs/screenshots/protect-1280.png)
+
+**The status page.** The plan, the schedule, the track record, and the log of every real CoinMarketCap call.
+
+![System status: plan limits, polling lanes and a live log of CoinMarketCap calls](docs/screenshots/status-1280.png)
 
 ## Tested against a real year of history
 
