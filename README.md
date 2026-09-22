@@ -2,7 +2,7 @@
 
 > Heracles walked into the valley of Nemea to kill a lion nobody could wound. He won by not fighting it head on. Nemea does the same for a portfolio: crypto's "invincible" drops are survivable when something is watching for you and tells you calmly what is going on.
 
-Nemea is a **non-custodial protection dashboard for casual crypto holders**. It watches your portfolio around the clock with CoinMarketCap data, alerts you when something critical happens (a drop, a stablecoin losing its peg, a volume anomaly, a whole category rotating out), and offers optional protective steps through your own wallet. Every alert has an **Explain like I'm 5** button that turns a panic moment into a learning moment.
+Nemea is a **non-custodial protection dashboard for casual crypto holders**. Before an alert reaches you, it asks one question a bare price alert cannot: is this just your coin, or is CoinMarketCap's own category data showing the whole sector down. "Your portfolio dropped 9%, and 64% of that is Smart Contracts falling 8% on average" is a different alert than "ETH is down". Nemea also watches for a stablecoin losing its peg, a volume anomaly and a stale quote, and offers optional protective steps through your own wallet. Every alert has an **Explain like I'm 5** button that turns a panic moment into a learning moment.
 
 **Not a trading bot. Insurance against being offline.** It is not a signal service and not built for people hunting alpha. It is for people who bought crypto and want to keep it.
 

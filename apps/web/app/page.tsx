@@ -11,7 +11,7 @@ import { WalletSignIn } from "@/components/wallet-signin";
 
 const steps = [
   { icon: ListPlus, title: "Add your holdings", body: "Type a coin, import a wallet address (read-only), or load a sample portfolio to look around first." },
-  { icon: Eye, title: "We watch with CoinMarketCap", body: "Prices, stablecoin pegs and trading volume are checked on a schedule that fits the data plan. No trading, no keys." },
+  { icon: Eye, title: "We watch with CoinMarketCap", body: "Prices, stablecoin pegs, trading volume and CoinMarketCap's own sector categories, so a drop is checked against the whole sector, not read alone. No trading, no keys." },
   { icon: BellRing, title: "Get a calm alert", body: "About three non-critical alerts a week, at most. Each one has an Explain like I'm 5 button that turns a scary moment into a small lesson." },
 ];
 

@@ -13,16 +13,18 @@ export function AlertSpecimen() {
           </Badge>
         </div>
         <div className="mt-4 border-l-[3px] border-warn-solid pl-4">
-          <h3 className="text-lg font-semibold leading-snug">A coin you hold moved a lot in one day</h3>
-          <p className="mt-1.5 text-muted">Real alerts name the coin, show the data behind the move, and stay calm about it.</p>
+          <h3 className="text-lg font-semibold leading-snug">Your portfolio is down 9% in 24 hours</h3>
+          <p className="mt-1.5 text-muted">
+            Your holdings are worth about $10,800 now, from about $11,900 a day ago. About 64% of the drop comes from Smart Contracts, which is down 8.1% on average across CoinMarketCap.
+          </p>
           <dl className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
             <div>
-              <dt className="text-xs font-semibold text-faint">What we saw</dt>
-              <dd className="text-sm">A 24-hour move past your threshold</dd>
+              <dt className="text-xs font-semibold text-faint">From Smart Contracts</dt>
+              <dd className="text-sm">64% of the drop (ETH, LINK)</dd>
             </div>
             <div>
-              <dt className="text-xs font-semibold text-faint">Your threshold</dt>
-              <dd className="text-sm">You set it in Settings</dd>
+              <dt className="text-xs font-semibold text-faint">Whole market, 24h</dt>
+              <dd className="text-sm">-1.2%</dd>
             </div>
           </dl>
         </div>
@@ -32,7 +34,7 @@ export function AlertSpecimen() {
             Explain like I&apos;m 5
           </p>
           <p className="mt-2 text-sm leading-relaxed">
-            Think of a price tag in a shop that suddenly changed. The thing on the shelf is the same thing. What people will pay for it today is different, and that is all this alert is telling you.
+            Your coins are grouped like fruit in a bowl. Today the whole bowl of "apples" got cheaper on CoinMarketCap, not just yours. Most of your drop is the bowl, not something wrong with your apples.
           </p>
         </div>
       </div>
