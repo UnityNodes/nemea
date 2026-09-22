@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import webpush from "web-push";
 import { privateKeyToAccount } from "viem/accounts";
 import { createSiweMessage } from "viem/siwe";
+import { DEFAULT_PREFERENCES } from "@nemea/shared-types";
 import { addHolding, guest, linkTelegram, startHarness, type Harness } from "./harness.ts";
 
 let h: Harness;
@@ -703,6 +704,17 @@ describe("credit protection", () => {
     const warned = h.telegram.filter((m) => (m.body as any).chat_id === "999");
     expect(warned).toHaveLength(1);
     expect(String((warned[0]!.body as any).text)).toContain("2000 of 15000 left");
+  });
+
+  it("fills in a preference added after the account was created, instead of leaving it undefined", async () => {
+    const c = await guest(h);
+    const userId = (await c.request("GET", "/me")).body.user.id as string;
+    const stored = (await h.composed.deps.repo.userById(userId))!;
+    const { rwaDriftPct, ...withoutNewField } = stored.preferences;
+    expect(rwaDriftPct).toBeDefined();
+    await h.composed.deps.repo.setPreferences(userId, withoutNewField as typeof stored.preferences);
+    const reread = (await h.composed.deps.repo.userById(userId))!;
+    expect(reread.preferences.rwaDriftPct).toBe(DEFAULT_PREFERENCES.rwaDriftPct);
   });
 
   it("caps expensive on-demand lookups globally so a burst of visitors cannot burn the CMC budget", async () => {

@@ -24,6 +24,15 @@ export function toHolding(r: HoldingRow): Holding {
   };
 }
 
+/**
+ * Preferences are written with every field but read back as raw jsonb, so a row
+ * stored before a new preference existed comes back without it. Left undefined,
+ * a threshold comparison is silently false and the rule fires on everything.
+ */
+function withDefaultPreferences<T extends { preferences: AlertPreferences }>(row: T): T {
+  return { ...row, preferences: { ...DEFAULT_PREFERENCES, ...row.preferences } };
+}
+
 export class HoldingLimitError extends Error {
   constructor(
     readonly max: number,
@@ -54,21 +63,21 @@ export class Repo {
 
   async userById(id: string): Promise<UserRow | null> {
     const [row] = await this.db.select().from(users).where(eq(users.id, id));
-    return row ?? null;
+    return row ? withDefaultPreferences(row) : null;
   }
 
   async userByWallet(address: string): Promise<UserRow | null> {
     const [row] = await this.db.select().from(users).where(eq(users.walletAddress, address.toLowerCase()));
-    return row ?? null;
+    return row ? withDefaultPreferences(row) : null;
   }
 
   async userByTelegramChat(chatId: string): Promise<UserRow | null> {
     const [row] = await this.db.select().from(users).where(eq(users.telegramChatId, chatId));
-    return row ?? null;
+    return row ? withDefaultPreferences(row) : null;
   }
 
   async allUsers(): Promise<UserRow[]> {
-    return this.db.select().from(users);
+    return (await this.db.select().from(users)).map(withDefaultPreferences);
   }
 
   async attachWallet(userId: string, address: string): Promise<void> {
