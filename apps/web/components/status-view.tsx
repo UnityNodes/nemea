@@ -256,8 +256,8 @@ function TrackRecordPanel() {
       description="Not a live number. A one-time replay of this exact alert engine against a real year of CoinMarketCap daily prices, so the rules can be checked against a real crash instead of only a demo."
     >
       <div className="rounded-[var(--radius-panel)] border border-line bg-surface p-5 shadow-[var(--shadow-soft)] sm:p-6">
-        <p className="flex items-center gap-2 text-sm text-muted">
-          <TestTube2 className="size-4" aria-hidden />
+        <p className="text-sm text-muted">
+          <TestTube2 className="mr-1.5 inline size-4 -translate-y-px" aria-hidden />
           {replay.windowFrom} to {replay.windowTo}, {replay.coinsWatched.join(", ")}. Replayed with <code className="font-mono">pnpm replay</code>, full detail in <code className="font-mono">{replay.evidenceFile}</code>.
         </p>
         {replay.busiestDay ? (
