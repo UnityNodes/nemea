@@ -1,0 +1,45 @@
+{
+  "ranAt": "2026-09-22T14:07:12.668Z",
+  "windowFrom": "2025-09-24",
+  "windowTo": "2026-09-22",
+  "warmupDays": 90,
+  "coinsWatched": [
+    "BTC",
+    "ETH",
+    "SOL",
+    "DOGE",
+    "USDC"
+  ],
+  "busiestDay": {
+    "date": "2025-10-11",
+    "changes": [
+      {
+        "symbol": "BTC",
+        "changePct": -7.185450680939795,
+        "fired": false
+      },
+      {
+        "symbol": "ETH",
+        "changePct": -12.218093253362387,
+        "fired": false
+      },
+      {
+        "symbol": "SOL",
+        "changePct": -14.617287917717581,
+        "fired": false
+      },
+      {
+        "symbol": "DOGE",
+        "changePct": -22.334507892981918,
+        "fired": true
+      }
+    ]
+  },
+  "nearLowAlerts": 93,
+  "totalAlertsFired": 94,
+  "priceDropAlerts": 1,
+  "suppressedByCooldown": 396,
+  "suppressedByWeeklyCap": 0,
+  "evidenceCommand": "pnpm replay",
+  "evidenceFile": "docs/evidence/replay.json"
+}

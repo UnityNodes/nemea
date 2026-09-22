@@ -38,6 +38,7 @@ With real keys, copy `.env.example` to `.env`, fill it in, and run `pnpm dev:api
 pnpm gate:a   # CoinMarketCap: plan, quotes, global, categories, history, budget
 pnpm gate:b   # wallet read on Ethereum, Base, Arbitrum and CMC matching
 pnpm gate:c   # Telegram: send a test message
+pnpm replay   # replay the real alert engine against a real year of CoinMarketCap history
 ```
 
 A gate that could not run exits 2. A gate that examined nothing never exits 0.
@@ -128,6 +129,16 @@ The response, trimmed to Bitcoin and to the fields Nemea reads (the full body wi
 
 TODO(owner): captured from a stack on real CoinMarketCap data with `CONFIRM_REAL_DATA=1 BASE_URL=<url> node apps/web/scripts/screenshots.mjs`. Dashboard, Telegram alert, Explain like I'm 5.
 
+## Tested against a real year of history
+
+Every demo alert in this README and on the live site can be a simulation, labelled as one. To show the rule engine actually holds up, `pnpm replay` runs the unmodified production engine (`packages/alerts`) against a real year of CoinMarketCap daily closes for BTC, ETH, SOL, DOGE and USDC (2025-09-24 to 2026-09-22), one coin at a time, with the same caps and cooldowns a live portfolio gets. Full method, every date fixed to a UTC calendar day for reproducibility, and all 94 alerts: [`docs/evidence/replay.json`](docs/evidence/replay.json). The same numbers are on the live site: [nemea.unitynodes.com/status](https://nemea.unitynodes.com/status), under "Tested against a real year of history".
+
+The worst day in the window was 2025-10-11. BTC fell 7.2%, ETH 12.2%, SOL 14.6%, DOGE 22.3%. Only DOGE crossed the default 15% threshold, and only DOGE got an alert. That is the point of thresholds: three real double-digit drops that day correctly stayed quiet.
+
+Over the year, the engine would have sent 94 alerts (1 price drop, 93 near-a-low notices) and held back 396 more with cooldowns alone, no weekly cap needed. Naive daily checking without cooldowns would have been roughly 5 times noisier.
+
+This is a measurement of the shipped engine on real prices, not a backtest of a trading strategy: recovery after an alert is not the point and is not claimed anywhere. `depeg` and `price_drop_1h` cannot be exercised this way (no hourly bars that far back on this plan, no volume in `quotes/historical`); `portfolio_drop` and `category_rotation` need a real multi-coin portfolio and category data, not a single-coin replay.
+
 ## Why not just...
 
 - **...a price alert?** A price alert is one number crossing one line for one coin. Nemea builds each alert from your holdings: it knows a stablecoin should be worth $1, that your portfolio fell mostly because one category fell, and that a quote is stale. It also tells you when *not* to worry, using the coin's own history.
@@ -181,13 +192,13 @@ More: [architecture](docs/ARCHITECTURE.md), [scope and what was cut](docs/SCOPE.
 
 ## Verification status
 
-Status on 2026-09-21. "Not run" means exactly that.
+Status on 2026-09-22. "Not run" means exactly that.
 
 | Claim | How it is checked | Status |
 |---|---|---|
-| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 527 tests pass |
+| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 533 tests pass |
 | Types | `pnpm typecheck` | passes in every package |
-| No key handling in source | `pnpm check:claims` | passes (135 source files) |
+| No key handling in source | `pnpm check:claims` | passes (137 source files) |
 | Fresh clone to first alert | clone, install, start, walk (see above) | verified |
 | UI at 1280 px and 390 px | Playwright walk of the whole journey against the dev stack | verified on development data |
 | Blockscout wallet read on Ethereum, Base, Arbitrum | live run on a public wallet | verified |
@@ -195,6 +206,7 @@ Status on 2026-09-21. "Not run" means exactly that.
 | CoinMarketCap response shapes and error codes | CoinMarketCap docs and keyless live responses, captured fixtures in tests | verified against docs and keyless responses |
 | Real CoinMarketCap calls with an API key | `pnpm gate:a` | **passed 2026-09-21** on a Basic key (15,000 credits/month, 50 requests/minute): 10 real calls, 11 credits, receipts in `docs/evidence/gate-a-cmc.json`, raw request and response in `docs/evidence/gate-a-sample-call.json` |
 | Telegram delivery | `pnpm gate:c` | **passed 2026-09-21** with a real bot: token accepted, test message accepted by Telegram (message id returned) and confirmed on the owner's phone, and an over-limit message is rejected as expected. No evidence file is committed because it would contain a chat id. The link-code flow between the web app and the bot is covered by tests, not yet exercised end to end against the real bot |
+| The shipped alert engine, replayed on a real year of CoinMarketCap history | `pnpm replay` | **run 2026-09-22**: 94 alerts over 2025-09-24 to 2026-09-22 on BTC/ETH/SOL/DOGE/USDC, 396 more correctly held back by cooldown, evidence in `docs/evidence/replay.json` |
 | Wallet import matched against real CoinMarketCap | `pnpm gate:b` | **passed 2026-09-21** on a public wallet: 78 tokens matched by chain and contract address across Ethereum, Base and Arbitrum, native ETH on all three, unmatched tokens skipped with a reason, evidence in `docs/evidence/gate-b-wallet.json` |
 | Email and browser push | tests with stubs | **not verified** against Resend or a real push service |
 | Deployed on the Unity Nodes server behind Cloudflare | `docs/DEPLOY.md`; `curl https://nemea.unitynodes.com/api/health`; each service survives `kill -9` | **live since 2026-09-21**; the live journey (guest, sample portfolio, simulated alert, Explain, swap links) was walked over https |

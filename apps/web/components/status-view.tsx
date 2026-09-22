@@ -1,14 +1,15 @@
 "use client";
 
-import { Bell, CheckCircle2, Mail, PauseCircle, RefreshCw, Send, XCircle } from "lucide-react";
+import { Bell, CheckCircle2, Mail, PauseCircle, RefreshCw, Send, TestTube2, XCircle } from "lucide-react";
 import type { CallReceiptView, PollLaneStatus, SystemStatus } from "@nemea/shared-types";
 import { Missing } from "@/components/missing";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/api";
-import { cadenceLabel, formatClock, formatInt, formatMs, formatDateTime, hitRatio, isNumber, relativeTime } from "@/lib/format";
+import { cadenceLabel, formatClock, formatInt, formatMs, formatDateTime, formatPct, hitRatio, isNumber, relativeTime } from "@/lib/format";
 import { useNow, useSystemStatus } from "@/lib/queries";
+import replay from "@/lib/replay-summary.json";
 
 const LANES: Record<PollLaneStatus["lane"], { label: string; body: string }> = {
   stablecoins: { label: "Stablecoin pegs", body: "Stablecoins, watched for a slip away from $1" },
@@ -247,6 +248,58 @@ function ReceiptsPanel({ status, now }: { status: SystemStatus; now: number }) {
   );
 }
 
+function TrackRecordPanel() {
+  const crashCoins = replay.busiestDay?.changes.filter((c) => c.changePct !== null) ?? [];
+  return (
+    <Panel
+      title="Tested against a real year of history"
+      description="Not a live number. A one-time replay of this exact alert engine against a real year of CoinMarketCap daily prices, so the rules can be checked against a real crash instead of only a demo."
+    >
+      <div className="rounded-[var(--radius-panel)] border border-line bg-surface p-5 shadow-[var(--shadow-soft)] sm:p-6">
+        <p className="flex items-center gap-2 text-sm text-muted">
+          <TestTube2 className="size-4" aria-hidden />
+          {replay.windowFrom} to {replay.windowTo}, {replay.coinsWatched.join(", ")}. Replayed with <code className="font-mono">pnpm replay</code>, full detail in <code className="font-mono">{replay.evidenceFile}</code>.
+        </p>
+        {replay.busiestDay ? (
+          <div className="mt-5 border-t border-line pt-5">
+            <p className="font-semibold">
+              The worst day in the window, {replay.busiestDay.date}
+            </p>
+            <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {crashCoins.map((c) => (
+                <li key={c.symbol} className="rounded-[var(--radius-control)] border border-line bg-sunken p-3">
+                  <p className="text-sm font-semibold">{c.symbol}</p>
+                  <p className="num mt-1 text-lg font-semibold text-crit-text">{formatPct(c.changePct)}</p>
+                  <Badge tone={c.fired ? "warn" : "neutral"} className="mt-2">
+                    {c.fired ? "Alert fired" : "Under threshold"}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-sm text-muted">
+              Only the coin that crossed the 15% default threshold got an alert. The others moved too, and correctly stayed quiet.
+            </p>
+          </div>
+        ) : null}
+        <dl className="mt-5 grid grid-cols-1 gap-6 border-t border-line pt-5 min-[520px]:grid-cols-2 lg:grid-cols-4">
+          <Stat label="Alerts that would reach you" note={`Over ${replay.windowFrom} to ${replay.windowTo}`}>
+            {formatInt(replay.totalAlertsFired)}
+          </Stat>
+          <Stat label="Held back by cooldown" note="Would have repeated the same warning">
+            {formatInt(replay.suppressedByCooldown)}
+          </Stat>
+          <Stat label="Held back by the weekly cap" note="Never needed, at these defaults">
+            {formatInt(replay.suppressedByWeeklyCap)}
+          </Stat>
+          <Stat label="Price-drop alerts" note="The rest were near-a-low notices">
+            {formatInt(replay.priceDropAlerts)}
+          </Stat>
+        </dl>
+      </div>
+    </Panel>
+  );
+}
+
 function EndpointsPanel() {
   return (
     <Panel title="Which CoinMarketCap data Nemea uses" description="Nothing else is requested. Nemea never trades and never touches your wallet.">
@@ -351,6 +404,7 @@ export function StatusView() {
           <PlanPanel status={status} />
           <LanesPanel status={status} now={now} />
           <ReceiptsPanel status={status} now={now} />
+          <TrackRecordPanel />
           <EndpointsPanel />
           <SystemPanel status={status} />
           <p className="text-sm text-muted">Server version {status.version}</p>

@@ -13,6 +13,7 @@
     "gate:a": "tsx --env-file-if-exists=.env scripts/gates/gate-a-cmc.ts",
     "gate:b": "tsx --env-file-if-exists=.env scripts/gates/gate-b-wallet.ts",
     "gate:c": "tsx --env-file-if-exists=.env scripts/gates/gate-c-telegram.ts",
+    "replay": "tsx --env-file-if-exists=.env scripts/replay.ts",
     "dev:api": "pnpm --filter @nemea/api dev",
     "dev:web": "pnpm --filter @nemea/web dev",
     "dev:bot": "pnpm --filter @nemea/bot dev",

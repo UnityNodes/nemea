@@ -24,6 +24,7 @@ pnpm check:claims         # no key-handling identifiers in source
 pnpm cadence              # polling plan per CMC plan
 pnpm dev:stack            # fake CMC + API, no keys needed
 pnpm gate:a | gate:b | gate:c   # need real keys, exit 2 when not run
+pnpm replay               # real alert engine replayed against a real year of CMC history, writes docs/evidence/replay.json
 ```
 
 ## Rules

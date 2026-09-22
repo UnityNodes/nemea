@@ -1,0 +1,1006 @@
+{
+  "ranAt": "2026-09-22T14:07:12.668Z",
+  "methodology": "Each coin replayed as its own single-coin portfolio, one real CoinMarketCap daily close per day (Basic plan allows exactly 12 months of daily history; this fetches the full 12), run through the production alert engine (packages/alerts, unmodified). The historical fetch uses explicit UTC-midnight time_start/time_end, not packages/cmc-client's getHistorical, because CoinMarketCap's daily interval anchors its bars to the query's own start time rather than to calendar midnight: the same date requested at two different times of day returns two different \"daily\" closes and two different 24h changes for it (see docs/API_FEEDBACK.md). Calendar-day boundaries make a rerun of this script reproducible; getHistorical's now-anchored bars would not be. price_drop_24h and depeg are scored from day 1: they only compare consecutive days, so there is nothing to warm up. near_low is scored only from day 90 onward: it needs a trailing low with real history behind it, and the running low has none for the first 90 days of a fetch that starts exactly where the fetch starts, so those days are excluded rather than scored against a look-ahead-free but artificially high low. A single-coin portfolio never triggers the portfolio-level rules, so this measures price_drop, depeg and near_low only. Caps and cooldowns are evaluated per coin, not across a combined portfolio. percentChange1h is not available from daily bars, so only the 24h drop rule can fire, not the 1h rule. This is a measurement of the shipped rule engine, not a backtest of a trading strategy: recovery within 7 days is reported for context, it is not a claim that Nemea predicts anything.",
+  "windowDays": 365,
+  "warmupDays": 90,
+  "plan": {
+    "creditLimitMonthly": 15000,
+    "rateLimitPerMinute": 50
+  },
+  "coins": [
+    {
+      "symbol": "BTC",
+      "days": 364,
+      "from": "2025-09-24",
+      "to": "2026-09-22",
+      "alerts": 26,
+      "suppressedCooldown": 114,
+      "suppressedCap": 0
+    },
+    {
+      "symbol": "ETH",
+      "days": 364,
+      "from": "2025-09-24",
+      "to": "2026-09-22",
+      "alerts": 16,
+      "suppressedCooldown": 64,
+      "suppressedCap": 0
+    },
+    {
+      "symbol": "SOL",
+      "days": 364,
+      "from": "2025-09-24",
+      "to": "2026-09-22",
+      "alerts": 21,
+      "suppressedCooldown": 81,
+      "suppressedCap": 0
+    },
+    {
+      "symbol": "DOGE",
+      "days": 364,
+      "from": "2025-09-24",
+      "to": "2026-09-22",
+      "alerts": 31,
+      "suppressedCooldown": 137,
+      "suppressedCap": 0
+    },
+    {
+      "symbol": "USDC",
+      "days": 364,
+      "from": "2025-09-24",
+      "to": "2026-09-22",
+      "alerts": 0,
+      "suppressedCooldown": 0,
+      "suppressedCap": 0
+    }
+  ],
+  "totalAlertsFired": 94,
+  "priceDropAlerts": 1,
+  "suppressedByCooldown": 396,
+  "suppressedByWeeklyCap": 0,
+  "medianForwardReturn7dPct": -4.257190121758869,
+  "recoveredWithin7dCount": 0,
+  "recoveredWithin7dOfMeasurable": 1,
+  "alerts": [
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2025-12-22",
+      "changePct": null,
+      "priceUsd": 88621.66110195908,
+      "forwardReturn7dPct": -0.861028630882567,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2025-12-29",
+      "changePct": null,
+      "priceUsd": 87858.60322670749,
+      "forwardReturn7dPct": 4.142383054203725,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-05",
+      "changePct": null,
+      "priceUsd": 91498.04311843071,
+      "forwardReturn7dPct": -0.7061874788892057,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-12",
+      "changePct": null,
+      "priceUsd": 90851.8953944997,
+      "forwardReturn7dPct": 3.076459022095088,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-20",
+      "changePct": null,
+      "priceUsd": 92583.63842558589,
+      "forwardReturn7dPct": -4.6688692909519585,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-27",
+      "changePct": null,
+      "priceUsd": 88261.02936268771,
+      "forwardReturn7dPct": -10.858229314053016,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-01-30",
+      "changePct": null,
+      "priceUsd": 84553.68820128129,
+      "forwardReturn7dPct": -25.72615664621396,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-02-06",
+      "changePct": null,
+      "priceUsd": 62801.27392446833,
+      "forwardReturn7dPct": 5.416122371274147,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-13",
+      "changePct": null,
+      "priceUsd": 66202.66777093662,
+      "forwardReturn7dPct": 1.1437545507677398,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-20",
+      "changePct": null,
+      "priceUsd": 66959.86379629635,
+      "forwardReturn7dPct": 0.7718601282986584,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-27",
+      "changePct": null,
+      "priceUsd": 67476.70028690305,
+      "forwardReturn7dPct": 5.0416783028606895,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-07",
+      "changePct": null,
+      "priceUsd": 68123.69951486093,
+      "forwardReturn7dPct": 4.152209343180243,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-22",
+      "changePct": null,
+      "priceUsd": 68903.22027025254,
+      "forwardReturn7dPct": -3.7320759289204455,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-29",
+      "changePct": null,
+      "priceUsd": 66331.69977229541,
+      "forwardReturn7dPct": 1.4483349291092713,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-05",
+      "changePct": null,
+      "priceUsd": 67292.40494916946,
+      "forwardReturn7dPct": 8.566724645717226,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-03",
+      "changePct": null,
+      "priceUsd": 66667.60753887883,
+      "forwardReturn7dPct": -7.493007768551359,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-06-06",
+      "changePct": null,
+      "priceUsd": 61033.82915591563,
+      "forwardReturn7dPct": 4.111322912628326,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-13",
+      "changePct": null,
+      "priceUsd": 63543.126958457215,
+      "forwardReturn7dPct": -0.09236420435301804,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-20",
+      "changePct": null,
+      "priceUsd": 63484.43585482101,
+      "forwardReturn7dPct": -5.467909565386919,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-06-26",
+      "changePct": null,
+      "priceUsd": 59706.755282381164,
+      "forwardReturn7dPct": 2.9916761616575402,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-07-03",
+      "changePct": null,
+      "priceUsd": 61492.988047063365,
+      "forwardReturn7dPct": 2.751225869721157,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-07-10",
+      "changePct": null,
+      "priceUsd": 63184.79904227871,
+      "forwardReturn7dPct": 0.9554917618870497,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-07-17",
+      "changePct": null,
+      "priceUsd": 63788.52459189257,
+      "forwardReturn7dPct": 1.974255489563526,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-07-25",
+      "changePct": null,
+      "priceUsd": 64091.960292754426,
+      "forwardReturn7dPct": -1.9794398400880875,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-08-01",
+      "changePct": null,
+      "priceUsd": 62823.29849642621,
+      "forwardReturn7dPct": 3.2804082303674154,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "BTC",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-08-11",
+      "changePct": null,
+      "priceUsd": 63912.503307021,
+      "forwardReturn7dPct": 0.8998916265291868,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2025-12-22",
+      "changePct": null,
+      "priceUsd": 3001.303126958279,
+      "forwardReturn7dPct": -1.7549101668311997,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2025-12-29",
+      "changePct": null,
+      "priceUsd": 2948.6329532458653,
+      "forwardReturn7dPct": 6.601525987667438,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-21",
+      "changePct": null,
+      "priceUsd": 2936.231930080686,
+      "forwardReturn7dPct": 2.937878844757669,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-28",
+      "changePct": null,
+      "priceUsd": 3022.4948667875465,
+      "forwardReturn7dPct": -26.203540357575356,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-01-31",
+      "changePct": null,
+      "priceUsd": 2702.515826855554,
+      "forwardReturn7dPct": -23.699086433923046,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-12",
+      "changePct": null,
+      "priceUsd": 1941.2957682181295,
+      "forwardReturn7dPct": 0.6925294863642468,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-19",
+      "changePct": null,
+      "priceUsd": 1954.7398138305814,
+      "forwardReturn7dPct": 5.223898471328721,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-28",
+      "changePct": null,
+      "priceUsd": 1929.9451643306782,
+      "forwardReturn7dPct": 2.517437083317446,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-07",
+      "changePct": null,
+      "priceUsd": 1978.5303195852305,
+      "forwardReturn7dPct": 5.757276225193568,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-28",
+      "changePct": null,
+      "priceUsd": 1991.6599523045875,
+      "forwardReturn7dPct": 3.105408475780224,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-01",
+      "changePct": null,
+      "priceUsd": 2004.0258782918775,
+      "forwardReturn7dPct": -15.680730236314064,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-06-04",
+      "changePct": null,
+      "priceUsd": 1810.956601682238,
+      "forwardReturn7dPct": -10.523947982535347,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-11",
+      "changePct": null,
+      "priceUsd": 1620.3724709349094,
+      "forwardReturn7dPct": 7.932410362207667,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-19",
+      "changePct": null,
+      "priceUsd": 1709.1295106698594,
+      "forwardReturn7dPct": -8.441138646068435,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-06-26",
+      "changePct": null,
+      "priceUsd": 1564.8595190333456,
+      "forwardReturn7dPct": 8.531832650668571,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "ETH",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-07-03",
+      "changePct": null,
+      "priceUsd": 1698.3707144153277,
+      "forwardReturn7dPct": 2.7030641639416926,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2025-12-22",
+      "changePct": null,
+      "priceUsd": 125.99595550293503,
+      "forwardReturn7dPct": -0.6355363966149582,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2025-12-29",
+      "changePct": null,
+      "priceUsd": 125.1952053474511,
+      "forwardReturn7dPct": 6.976630038658062,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-21",
+      "changePct": null,
+      "priceUsd": 125.70457193600636,
+      "forwardReturn7dPct": 1.0742628827173781,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-01-26",
+      "changePct": null,
+      "priceUsd": 118.77224877141549,
+      "forwardReturn7dPct": -15.132742655906403,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-02-02",
+      "changePct": null,
+      "priceUsd": 100.79875001820423,
+      "forwardReturn7dPct": -13.64044277458119,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-11",
+      "changePct": null,
+      "priceUsd": 82.91266779940219,
+      "forwardReturn7dPct": 2.700173325869194,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-18",
+      "changePct": null,
+      "priceUsd": 85.15145353908818,
+      "forwardReturn7dPct": -7.206214040174707,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-02-24",
+      "changePct": null,
+      "priceUsd": 77.76473346594464,
+      "forwardReturn7dPct": 11.398662042004315,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-07",
+      "changePct": null,
+      "priceUsd": 84.6826112909144,
+      "forwardReturn7dPct": 4.100061535757525,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-28",
+      "changePct": null,
+      "priceUsd": 83.03312102200256,
+      "forwardReturn7dPct": -3.2037300108869426,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-04",
+      "changePct": null,
+      "priceUsd": 80.37296400484459,
+      "forwardReturn7dPct": 5.545785945294036,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-11",
+      "changePct": null,
+      "priceUsd": 84.8302765464415,
+      "forwardReturn7dPct": 4.771340949843907,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-20",
+      "changePct": null,
+      "priceUsd": 83.57979390649115,
+      "forwardReturn7dPct": 4.055071604255059,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-28",
+      "changePct": null,
+      "priceUsd": 84.82394542197329,
+      "forwardReturn7dPct": -0.865737876755707,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-05-05",
+      "changePct": null,
+      "priceUsd": 84.08959239789668,
+      "forwardReturn7dPct": 15.766419677050584,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-05-18",
+      "changePct": null,
+      "priceUsd": 85.17155619357946,
+      "forwardReturn7dPct": 0.08400622937099178,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-05-25",
+      "changePct": null,
+      "priceUsd": 85.24310560643428,
+      "forwardReturn7dPct": -3.4561954005745728,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-01",
+      "changePct": null,
+      "priceUsd": 82.29693731115778,
+      "forwardReturn7dPct": -19.382906994557274,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-06-03",
+      "changePct": null,
+      "priceUsd": 74.13051358523397,
+      "forwardReturn7dPct": -12.37280924028487,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-10",
+      "changePct": null,
+      "priceUsd": 64.95848655048951,
+      "forwardReturn7dPct": 13.029251233770628,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "SOL",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-25",
+      "changePct": null,
+      "priceUsd": 67.97498418192397,
+      "forwardReturn7dPct": 13.833592563623483,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "price_drop_24h",
+      "severity": "warning",
+      "date": "2025-10-11",
+      "changePct": -22.334507892981918,
+      "priceUsd": 0.19305051017357636,
+      "forwardReturn7dPct": -4.257190121758869,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2025-12-22",
+      "changePct": null,
+      "priceUsd": 0.1310610647787441,
+      "forwardReturn7dPct": -5.5226739885569565,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2025-12-27",
+      "changePct": null,
+      "priceUsd": 0.12201254787778659,
+      "forwardReturn7dPct": 16.12905639359979,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-21",
+      "changePct": null,
+      "priceUsd": 0.12325609146119577,
+      "forwardReturn7dPct": 2.2379058361065622,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-01-28",
+      "changePct": null,
+      "priceUsd": 0.12601444672536272,
+      "forwardReturn7dPct": -16.15241645437761,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-01-30",
+      "changePct": null,
+      "priceUsd": 0.11709863030536415,
+      "forwardReturn7dPct": -24.57197240976241,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-02-06",
+      "changePct": null,
+      "priceUsd": 0.08832518717452038,
+      "forwardReturn7dPct": 5.2742847277881815,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-13",
+      "changePct": null,
+      "priceUsd": 0.09298370903245644,
+      "forwardReturn7dPct": 5.709564097532362,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-02-23",
+      "changePct": null,
+      "priceUsd": 0.0954540722380318,
+      "forwardReturn7dPct": -3.69662595667418,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-02",
+      "changePct": null,
+      "priceUsd": 0.0919254922269782,
+      "forwardReturn7dPct": -2.9911083350283394,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-09",
+      "changePct": null,
+      "priceUsd": 0.08917590116696122,
+      "forwardReturn7dPct": 9.219281673445568,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-19",
+      "changePct": null,
+      "priceUsd": 0.0951818269947399,
+      "forwardReturn7dPct": 0.9899011986143317,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-03-26",
+      "changePct": null,
+      "priceUsd": 0.09612403304102385,
+      "forwardReturn7dPct": -4.0829242673746675,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-02",
+      "changePct": null,
+      "priceUsd": 0.09219936156921264,
+      "forwardReturn7dPct": 0.21674598406959275,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-09",
+      "changePct": null,
+      "priceUsd": 0.09239919998275171,
+      "forwardReturn7dPct": 2.724641829923791,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-16",
+      "changePct": null,
+      "priceUsd": 0.0949167472359967,
+      "forwardReturn7dPct": 0.8667575701673755,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-04-23",
+      "changePct": null,
+      "priceUsd": 0.09573944532802134,
+      "forwardReturn7dPct": 8.648554821010542,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-03",
+      "changePct": null,
+      "priceUsd": 0.09258078024711433,
+      "forwardReturn7dPct": -8.414691059694968,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-06-06",
+      "changePct": null,
+      "priceUsd": 0.08139439298881496,
+      "forwardReturn7dPct": 5.608985600915695,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-13",
+      "changePct": null,
+      "priceUsd": 0.08595979277151032,
+      "forwardReturn7dPct": -2.831331571267794,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-06-20",
+      "changePct": null,
+      "priceUsd": 0.08352598602017418,
+      "forwardReturn7dPct": -9.414392722100164,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-06-24",
+      "changePct": null,
+      "priceUsd": 0.07883598217550047,
+      "forwardReturn7dPct": -8.684083821064679,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-07-01",
+      "changePct": null,
+      "priceUsd": 0.0719897994022204,
+      "forwardReturn7dPct": 3.0483436696767545,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-07-08",
+      "changePct": null,
+      "priceUsd": 0.07418429589511098,
+      "forwardReturn7dPct": 0.3373754962706219,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-07-14",
+      "changePct": null,
+      "priceUsd": 0.07185929063534156,
+      "forwardReturn7dPct": 0.3855420444748953,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-07-21",
+      "changePct": null,
+      "priceUsd": 0.07213633841360222,
+      "forwardReturn7dPct": -2.498467228305137,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-07-24",
+      "changePct": null,
+      "priceUsd": 0.06913097939890728,
+      "forwardReturn7dPct": 2.051738204916959,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-07-31",
+      "changePct": null,
+      "priceUsd": 0.07054936611466793,
+      "forwardReturn7dPct": -2.210962125117542,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "warning",
+      "date": "2026-08-02",
+      "changePct": null,
+      "priceUsd": 0.06907738509369392,
+      "forwardReturn7dPct": 1.9013937074222393,
+      "recoveredWithin7d": true
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-08-09",
+      "changePct": null,
+      "priceUsd": 0.07039081814711724,
+      "forwardReturn7dPct": -1.195708620891259,
+      "recoveredWithin7d": false
+    },
+    {
+      "coin": "DOGE",
+      "kind": "near_low",
+      "severity": "info",
+      "date": "2026-08-16",
+      "changePct": null,
+      "priceUsd": 0.06954914906621627,
+      "forwardReturn7dPct": 32.1897795360412,
+      "recoveredWithin7d": true
+    }
+  ]
+}
