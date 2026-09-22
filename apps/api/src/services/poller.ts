@@ -102,7 +102,10 @@ export class Poller {
 
   private async rwaWorthRefreshing(): Promise<boolean> {
     const index = await this.market.rwaByWrapperId();
-    if (index.size === 0) return true;
+    if (index.size === 0) {
+      this.rwaHeld = true;
+      return true;
+    }
     const held = [...this.workload.stablecoinIds, ...this.workload.topIds, ...this.workload.smallIds];
     this.rwaHeld = held.some((id) => index.has(id));
     return this.rwaHeld;
@@ -217,7 +220,8 @@ export class Poller {
       } catch (error) {
         await this.record("categories", { ok: false, error: this.handleFailure(error, "categories") });
       }
-      if (((this.categoryRuns % RWA_EVERY_CATEGORY_RUNS === 0 && (await this.rwaWorthRefreshing())) || (await this.rwaWentStale()))) {
+      const rwaHeld = await this.rwaWorthRefreshing();
+      if (rwaHeld && (this.categoryRuns % RWA_EVERY_CATEGORY_RUNS === 0 || (await this.rwaWentStale()))) {
         try {
           await this.record("rwa", { ok: true, items: await this.market.refreshRwa(RWA_WATCH_COUNT) });
         } catch (error) {

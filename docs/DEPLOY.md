@@ -2,6 +2,13 @@
 
 Two recipes. **Own server** is what is running at https://nemea.unitynodes.com (deployed 2026-09-21). **Vercel and Railway** is the original plan from the spec and has not been deployed from this repository.
 
+
+## The one account in the production database
+
+There is deliberately one guest account holding 1 PAXG (tokenised gold, CoinMarketCap id 4705). It is not a person. It exists so the tokenised-asset lane keeps refreshing: that lane only runs while somebody holds a wrapper, and with it warm a visitor who adds a tokenised stock gets their first drift alert in about three and a half minutes instead of waiting up to two hours for the lane to notice. Measured on 2026-09-22: a Hyperliquid TSLA wrapper alerted 211 seconds after being added.
+
+It costs about 450 credits a month, 3% of the free plan, and `/status` reports the higher estimate honestly while it is there. Delete the account and the lane goes idle, `/status` drops back to the lower estimate, and nothing else changes.
+
 ## Own server (what is live)
 
 Behind Cloudflare, Caddy and systemd on the Unity Nodes box, as the sibling projects are.
