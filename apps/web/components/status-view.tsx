@@ -27,7 +27,9 @@ const ENDPOINTS: Array<{ path: string; name: string; use: string }> = [
   { path: "/v2/cryptocurrency/info", name: "Coin information", use: "Names, tags and contract addresses, so the right coin is watched." },
   { path: "/v1/cryptocurrency/categories", name: "Categories", use: "How whole sectors are moving." },
   { path: "/v2/cryptocurrency/price-performance-stats/latest", name: "Price performance stats", use: "Highs and lows over time. Only used when the data plan allows it." },
+  { path: "/v5/real-world-assets/map", name: "Tokenised asset list", use: "Which tokenised assets exist and which of them actually have a tradable version. Free." },
   { path: "/v5/real-world-assets/quotes/latest", name: "Tokenised real-world assets", use: "What a tokenised stock or commodity trades at across every issuer, so a drift in the one you hold is visible." },
+  { path: "/v1/key/info", name: "Plan limits", use: "How many calls the plan allows, so the schedule above is computed from the real limit rather than assumed." },
 ];
 
 const VERDICTS: Record<SystemStatus["budgetVerdict"], { tone: "safe" | "warn" | "crit" | "neutral"; label: string; body: string }> = {

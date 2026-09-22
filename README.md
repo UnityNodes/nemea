@@ -215,7 +215,7 @@ Status on 2026-09-22. "Not run" means exactly that.
 
 | Claim | How it is checked | Status |
 |---|---|---|
-| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 549 tests pass |
+| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 550 tests pass |
 | Types | `pnpm typecheck` | passes in every package |
 | No key handling in source | `pnpm check:claims` | passes (137 source files) |
 | Fresh clone to first alert | clone, install, start, walk (see above) | verified |

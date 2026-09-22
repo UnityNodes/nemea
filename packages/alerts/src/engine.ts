@@ -33,6 +33,7 @@ export const COOLDOWN_MS: Record<AlertKind, number> = {
 
 export const CRITICAL_PER_DAY_CAP = 3;
 export const MAX_MARKET_CONTEXT_AGE_MS = 2 * HOUR;
+export const MAX_RWA_AGE_MS = 12 * HOUR;
 
 function isFresh(fetchedAt: string, now: Date, maxAgeMs: number): boolean {
   const t = Date.parse(fetchedAt);
@@ -66,6 +67,7 @@ export function evaluate(raw: EngineInput): EngineOutput {
     ...raw,
     global: raw.global && isFresh(raw.global.fetchedAt, raw.now, maxContextAge) ? raw.global : null,
     categories: raw.categories.filter((c) => isFresh(c.fetchedAt, raw.now, maxContextAge)),
+    rwaByWrapperId: new Map([...raw.rwaByWrapperId].filter(([, asset]) => isFresh(asset.fetchedAt, raw.now, raw.maxRwaAgeMs ?? MAX_RWA_AGE_MS))),
   };
   const suppressed: Suppressed[] = [];
   const rows = priceRows(input.holdings, input.quotes);

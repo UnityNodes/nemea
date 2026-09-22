@@ -42,6 +42,7 @@ export type EngineInput = {
   past: readonly PastAlert[];
   maxQuoteAgeMs: number;
   maxMarketContextAgeMs?: number;
+  maxRwaAgeMs?: number;
 };
 
 export type AlertContext = {

@@ -43,6 +43,7 @@ export class Poller {
   private readonly lanes = new Map<LaneName, LaneState>();
   private categoryRuns = 0;
   private rwaHeld = false;
+  private adminAlertsWarned = false;
 
   constructor(
     private readonly db: Db,
@@ -140,6 +141,10 @@ export class Poller {
       if (info.rateLimitPerMinute && info.rateLimitPerMinute > 0) this.market.cmc.setRequestsPerMinute(info.rateLimitPerMinute);
     } catch (error) {
       this.log("could not read CMC key info; keeping previous plan limits", error);
+    }
+    if (!this.adminAlertsWarned && !this.delivery.canNotifyAdmin()) {
+      this.adminAlertsWarned = true;
+      this.log("no operator alert channel is configured (ADMIN_TELEGRAM_CHAT_ID is empty), so the low-credit warning will only reach this log");
     }
     this.plan = planCadence(this.creditLimit, this.workload);
     if (this.plan.verdict === "insufficient") this.log(`CMC plan is too small for the current portfolios even at the slowest cadence (~${this.plan.estimatedCreditsPerMonth} credits/month)`);

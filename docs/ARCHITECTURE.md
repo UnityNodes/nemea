@@ -35,9 +35,9 @@
 
 ## Data flow for one alert
 
-1. **Poller tick (every 60 s).** `idsDueOnTick` picks the coin ids due on this tick from the stablecoin, top-holding and small-holding lanes, deduped into one `quotes/latest` call per 100 ids. Global metrics and categories are due on their own lanes. Cadence comes from `planCadence` and the key's real limits.
+1. **Poller tick (every 60 s).** `idsDueOnTick` picks the coin ids due on this tick from the stablecoin, top-holding and small-holding lanes, deduped into one `quotes/latest` call per 100 ids. Global metrics and categories are due on their own lanes. Tokenised real-world assets ride on every fourth category run, and only while somebody actually holds a wrapper, so an all-crypto portfolio never pays for that lane. Cadence comes from `planCadence` and the key's real limits.
 2. **Persist.** Quotes, metadata, global metrics and categories are stored as the latest snapshot. Every quote keeps CoinMarketCap's own `last_updated`.
-3. **Evaluate.** Only users holding a refreshed coin are evaluated. `evaluate()` receives holdings, fresh quotes, metadata, categories, global metrics, known lows, the user's preferences and their past alerts. It returns the alerts to emit and every suppression with a reason (`cooldown`, `weekly_cap`, `stale_quote`, `no_data`, `rolled_into_portfolio_alert`).
+3. **Evaluate.** Only users holding a refreshed coin are evaluated. `evaluate()` receives holdings, fresh quotes, metadata, categories, global metrics, known lows, the user's preferences and their past alerts. It returns the alerts to emit and every suppression with a reason (`cooldown`, `weekly_cap`, `stale_quote`, `no_data`, `rolled_into_portfolio_alert`, `unit_mismatch`). Market context that is too old to trust is dropped before the rules run: global metrics and categories past 2 hours, tokenised-asset averages past 12 hours.
 4. **Store and deliver.** Emitted alerts are stored, then sent to each enabled channel. Each attempt is recorded in `deliveries` as sent, failed or skipped. A blocked Telegram bot unlinks itself.
 5. **Explain.** `GET /alerts/:id/explain` re-reads the stored alert context, asks CoinMarketCap for up to 365 daily closes (cached), and builds the explanation. If history is unavailable the reason is shown, not hidden.
 

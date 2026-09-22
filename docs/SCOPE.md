@@ -8,7 +8,7 @@ Written before the build and kept honest since. The second list is the useful on
 |---|---|
 | Portfolio | Manual entry (token + amount + optional cost basis). Read-only wallet import on Ethereum, Base, Arbitrum. Guest accounts and Sign-In with Ethereum (EOA wallets). |
 | Monitoring | CoinMarketCap quotes, global metrics, categories, history. Polling cadence adapts to the API plan. |
-| Alerts | Price drop (1h / 24h), below cost basis, near low, stablecoin depeg, stablecoin volume anomaly, volume spike, volume dry-up, category rotation, portfolio drop with attribution. Cooldowns, weekly cap, daily cap on critical. |
+| Alerts | Price drop (1h / 24h), below cost basis, near low, stablecoin depeg, stablecoin volume anomaly, volume spike, volume dry-up, category rotation, portfolio drop with attribution, tokenised real-world asset drift. Cooldowns, weekly cap, daily cap on critical. |
 | Delivery | Web dashboard, Telegram bot, email (critical immediately, everything else in one daily digest), browser push (when VAPID keys are configured). |
 | Explain like I'm 5 | Deterministic, built from CoinMarketCap data only. No language model, no prediction. |
 | Protective actions | Level 1 alert only. Level 2 alert plus swap links (Uniswap, 1inch) the user approves in their own wallet. |

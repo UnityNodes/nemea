@@ -74,6 +74,13 @@ describe("rwa drift", () => {
     expect(out.emit.some((c) => c.kind === "rwa_drift")).toBe(true);
   });
 
+  it("refuses to compare a fresh wrapper price against a stale tokenised average", () => {
+    const stale = rwa({ fetchedAt: new Date(NOW.getTime() - 13 * 3600_000).toISOString() });
+    expect(run(220, stale).emit.filter((c) => c.kind === "rwa_drift")).toHaveLength(0);
+    const fresh = rwa({ fetchedAt: new Date(NOW.getTime() - 11 * 3600_000).toISOString() });
+    expect(run(220, fresh).emit.some((c) => c.kind === "rwa_drift")).toBe(true);
+  });
+
   it("never alerts without an anchor price or a wrapper price", () => {
     expect(run(null).emit.filter((c) => c.kind === "rwa_drift")).toHaveLength(0);
     expect(run(220, rwa({ averageTokenizedPriceUsd: null })).emit.filter((c) => c.kind === "rwa_drift")).toHaveLength(0);

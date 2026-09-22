@@ -16,9 +16,16 @@ export class DeliveryService {
     private readonly adminChatId: string | null = null,
   ) {}
 
+
+  canNotifyAdmin(): boolean {
+    return Boolean(this.adminChatId && this.senders.telegram);
+  }
+
   async notifyAdmin(text: string): Promise<boolean> {
-    if (!this.adminChatId || !this.senders.telegram) return false;
-    const res = await this.senders.telegram.send(this.adminChatId, text, null);
+    const chatId = this.adminChatId;
+    const telegram = this.senders.telegram;
+    if (!chatId || !telegram) return false;
+    const res = await telegram.send(chatId, text, null);
     if (!res.ok) this.log(`admin notification failed: ${res.reason}`);
     return res.ok;
   }
