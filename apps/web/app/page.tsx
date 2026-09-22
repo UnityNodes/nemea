@@ -44,7 +44,7 @@ export default function LandingPage() {
             <h1 className="display mt-5 text-[clamp(2.4rem,5.6vw,4.2rem)]">
               The lion was invincible. <em className="not-italic text-primary">Then it wasn&rsquo;t.</em>
             </h1>
-            <p className="mt-6 max-w-[34rem] text-lg text-muted">Nemea watches your crypto while you are offline and calmly tells you when something looks wrong.</p>
+            <p className="mt-6 max-w-[34rem] text-lg text-muted">Every crypto tool is a screen you have to be watching. Nemea is the one that writes to you when you are not.</p>
             <div className="mt-8">
               <HeroActions />
             </div>

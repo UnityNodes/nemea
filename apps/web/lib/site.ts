@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const OG_SIZE = { width: 1200, height: 630 } as const;
 
 export const DEFAULT_TITLE = "Nemea | Calm protection for your crypto";
-export const DEFAULT_DESCRIPTION = "Nemea watches your crypto with CoinMarketCap data and tells you calmly when something looks wrong. Non-custodial, not a trading bot, not financial advice.";
+export const DEFAULT_DESCRIPTION = "Every crypto tool is a screen you have to be watching. Nemea is the one that writes to you when you are not, using CoinMarketCap data. Non-custodial, not a trading bot, not financial advice.";
 
 type OgPage = {
   path: string | null;
@@ -23,7 +23,7 @@ export const OG_PAGES = {
     description: DEFAULT_DESCRIPTION,
     headline: "The lion was invincible.",
     accent: "Then it wasn’t.",
-    sub: "Nemea watches your crypto while you are offline and calmly tells you when something looks wrong.",
+    sub: "Every crypto tool is a screen you have to be watching. Nemea is the one that writes to you when you are not.",
     alt: "Nemea: The lion was invincible. Then it wasn’t. Calm alerts for your crypto.",
     noindex: false,
   },
