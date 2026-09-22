@@ -1,5 +1,5 @@
 import type { CmcClient } from "@nemea/cmc-client";
-import type { CategorySnapshot, GlobalMetricsSnapshot, QuoteSnapshot, TokenMeta } from "@nemea/shared-types";
+import type { CategorySnapshot, GlobalMetricsSnapshot, QuoteSnapshot, RwaSnapshot, TokenMeta } from "@nemea/shared-types";
 import type { PriceLow } from "@nemea/alerts";
 import { eq, inArray } from "drizzle-orm";
 import type { Db } from "../db/client.ts";
@@ -96,6 +96,24 @@ export class MarketService {
     const at = this.now();
     await this.db.insert(marketSnapshots).values({ key: "categories", data, fetchedAt: at }).onConflictDoUpdate({ target: marketSnapshots.key, set: { data, fetchedAt: at } });
     return data.length;
+  }
+
+  async rwaByWrapperId(): Promise<Map<number, RwaSnapshot>> {
+    const [row] = await this.db.select().from(marketSnapshots).where(eq(marketSnapshots.key, "rwa"));
+    const assets = row ? (row.data as RwaSnapshot[]) : [];
+    const out = new Map<number, RwaSnapshot>();
+    for (const asset of assets) for (const wrapper of asset.wrappers) out.set(wrapper.cmcId, asset);
+    return out;
+  }
+
+  async refreshRwa(watchCount: number): Promise<number> {
+    const map = await this.cmc.getRwaMap(watchCount);
+    const ids = map.filter((entry) => entry.hasTokens).map((entry) => entry.rwaId);
+    if (ids.length === 0) return 0;
+    const data = await this.cmc.getRwaQuotes(ids);
+    const at = this.now();
+    await this.db.insert(marketSnapshots).values({ key: "rwa", data, fetchedAt: at }).onConflictDoUpdate({ target: marketSnapshots.key, set: { data, fetchedAt: at } });
+    return data.reduce((n, a) => n + a.wrappers.length, 0);
   }
 
   async lows(ids: readonly number[]): Promise<Map<number, PriceLow>> {

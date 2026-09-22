@@ -60,6 +60,7 @@ A gate that could not run exits 2. A gate that examined nothing never exits 0.
 | Volume dry-up | volume down 70% while the price falls (a proxy for thin liquidity) | 70% | quotes |
 | Category rotation | a category you hold falls X% and at least 5 points worse than the market | 10% | categories, global metrics |
 | Portfolio drop | portfolio down X% in 24 h, with a breakdown by category ("because Layer 1 is down 18%") | 10% | quotes, info tags, categories |
+| Tokenised asset drift | a tokenised stock or commodity you hold trades away from what every other version of that asset trades at | 3% | real-world-assets map and quotes |
 
 Alert fatigue is a design constraint: at most 3 non-critical alerts a week (you can lower it), cooldowns per alert, a roll-up so one crash is one alert, and no alert at all on stale or missing data.
 
@@ -76,6 +77,8 @@ Alert fatigue is a design constraint: at most 3 non-critical alerts a week (you 
 | `/v1/cryptocurrency/categories` | category averages for "because Layer 1 is down X%" and rotation | every 30 min on a large plan |
 | `/v2/cryptocurrency/price-performance-stats/latest` | all-time low, when the plan allows | in the background for your largest holdings, cached 24 h; falls back to historical when the plan does not allow it |
 | `/v1/key/info` | plan limits, so the polling budget is computed, not assumed | at start and hourly |
+| `/v5/real-world-assets/map` | which tokenised assets exist and which actually have wrappers | with the RWA refresh, 0 credits |
+| `/v5/real-world-assets/quotes/latest` | the average price across every tokenised version of a real asset, and each wrapper's own price and CoinMarketCap id | every 4th category run; 282 assets and 829 wrappers cost 5 credits |
 
 The `/status` page lists the last real calls with time, endpoint, HTTP status, credits and latency.
 
@@ -143,6 +146,18 @@ Over the year, the engine would have sent 94 alerts (1 price drop, 93 near-a-low
 
 This is a measurement of the shipped engine on real prices, not a backtest of a trading strategy: recovery after an alert is not the point and is not claimed anywhere. `depeg` and `price_drop_1h` cannot be exercised this way (no hourly bars that far back on this plan, no volume in `quotes/historical`); `portfolio_drop` and `category_rotation` need a real multi-coin portfolio and category data, not a single-coin replay.
 
+## Tokenised stocks and gold, watched the same way
+
+CoinMarketCap tracks 7,942 real-world assets: tokenised stocks, gold, treasuries. Each one has several wrappers from different issuers, and they are supposed to track the same thing. Usually they do. Sometimes one does not, and if you hold that one, nothing tells you.
+
+Nemea watches the gap. Your wrapper's price against the average across every tokenised version of the same asset, from `/v5/real-world-assets/quotes/latest`. That is the depeg rule pointed at a different anchor: a stablecoin should be $1, a tokenised NVDA wrapper should be what tokenised NVDA costs everywhere else. Alert, cooldown, weekly cap and Explain like I'm 5 are the same ones the rest of Nemea uses.
+
+On a live run on 2026-09-22 it read 282 assets and 829 wrappers for 5 credits in 1.4 seconds, and 16 wrappers were sitting 3% to 25% away from their asset's average, the widest being a Hyperliquid TSLA wrapper at 20.8% below.
+
+**The trap, and what it cost.** Seventeen more wrappers looked like enormous dislocations and are not: `GRAMS` prices silver per gram while the asset average is per troy ounce, so it reads 93% low, and `XAGX` reads 112% high for the same reason. Nothing in the response says which unit a wrapper uses. A naive threshold would alert on those every single poll forever, which is exactly the noise Nemea exists to avoid, so anything past 25% is treated as a different unit rather than a market move and is recorded, not sent. `packages/alerts/test/rwa.test.ts` holds that line.
+
+Getting here cost an afternoon of wrong turns that are worth passing on: the RWA family is under `/v5/real-world-assets/`, guessable from no sibling, and an unrouted CoinMarketCap path answers `200` with "The system is busy, please try again later!" rather than 404, so a wrong guess looks exactly like an outage. Then `quotes/latest` rejects a whole batch of ids if even one asset has no wrappers, and there is no `skip_invalid` to soften it, so the free `map` call has to filter on `has_tokens` first. All of it is in [docs/API_FEEDBACK.md](docs/API_FEEDBACK.md).
+
 ## Why not just...
 
 - **...a price alert?** A price alert is one number crossing one line for one coin. Nemea builds each alert from your holdings: it knows a stablecoin should be worth $1, that your portfolio fell mostly because one category fell, and that a quote is stale. It also tells you when *not* to worry, using the coin's own history.
@@ -200,7 +215,7 @@ Status on 2026-09-22. "Not run" means exactly that.
 
 | Claim | How it is checked | Status |
 |---|---|---|
-| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 533 tests pass |
+| Alert engine, cadence maths, CoinMarketCap client, API, bot, wallet reader, web helpers | `pnpm test` | 549 tests pass |
 | Types | `pnpm typecheck` | passes in every package |
 | No key handling in source | `pnpm check:claims` | passes (137 source files) |
 | Fresh clone to first alert | clone, install, start, walk (see above) | verified |
@@ -210,6 +225,7 @@ Status on 2026-09-22. "Not run" means exactly that.
 | CoinMarketCap response shapes and error codes | CoinMarketCap docs and keyless live responses, captured fixtures in tests | verified against docs and keyless responses |
 | Real CoinMarketCap calls with an API key | `pnpm gate:a` | **passed 2026-09-21** on a Basic key (15,000 credits/month, 50 requests/minute): 10 real calls, 11 credits, receipts in `docs/evidence/gate-a-cmc.json`, raw request and response in `docs/evidence/gate-a-sample-call.json` |
 | Telegram delivery | `pnpm gate:c` | **passed 2026-09-21** with a real bot: token accepted, test message accepted by Telegram (message id returned) and confirmed on the owner's phone, and an over-limit message is rejected as expected. No evidence file is committed because it would contain a chat id. The link-code flow between the web app and the bot is covered by tests, not yet exercised end to end against the real bot |
+| Tokenised-asset drift, end to end on the deployed site | added a real wrapper to a live portfolio and waited for the poller | **verified 2026-09-22**: a Hyperliquid TSLA wrapper at $300.00 against a $379.00 average across all tokenised TSLA produced one alert, with Explain like I'm 5, about three minutes after the holding was added |
 | The shipped alert engine, replayed on a real year of CoinMarketCap history | `pnpm replay` | **run 2026-09-22**: 94 alerts over 2025-09-24 to 2026-09-22 on BTC/ETH/SOL/DOGE/USDC, 396 more correctly held back by cooldown, evidence in `docs/evidence/replay.json` |
 | Wallet import matched against real CoinMarketCap | `pnpm gate:b` | **passed 2026-09-21** on a public wallet: 78 tokens matched by chain and contract address across Ethereum, Base and Arbitrum, native ETH on all three, unmatched tokens skipped with a reason, evidence in `docs/evidence/gate-b-wallet.json` |
 | Email and browser push | tests with stubs | **not verified** against Resend or a real push service |

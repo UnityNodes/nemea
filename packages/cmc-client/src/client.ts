@@ -1,4 +1,4 @@
-import type { CategorySnapshot, GlobalMetricsSnapshot, PricePoint, QuoteSnapshot, TokenMeta } from "@nemea/shared-types";
+import type { CategorySnapshot, GlobalMetricsSnapshot, PricePoint, QuoteSnapshot, RwaSnapshot, TokenMeta } from "@nemea/shared-types";
 import { TtlCache, type CacheStats } from "./cache.ts";
 import {
   CmcAuthError,
@@ -19,7 +19,10 @@ import {
   parseKeyInfo,
   parsePriceStatsAllTime,
   parseQuotes,
+  parseRwaMap,
+  parseRwaQuotes,
   type KeyInfo,
+  type RwaMapEntry,
 } from "./parse.ts";
 import type { PriceLow } from "./low.ts";
 
@@ -31,6 +34,8 @@ export const ENDPOINTS = {
   categories: "/v1/cryptocurrency/categories",
   priceStats: "/v2/cryptocurrency/price-performance-stats/latest",
   keyInfo: "/v1/key/info",
+  rwaQuotes: "/v5/real-world-assets/quotes/latest",
+  rwaMap: "/v5/real-world-assets/map",
 } as const;
 
 export type CallReceipt = {
@@ -65,10 +70,13 @@ export const DEFAULT_TTL_MS = {
   keyInfo: 5 * 60_000,
   priceLow: 6 * 3600_000,
   planRestricted: 3600_000,
+  rwa: 90_000,
 };
 
 export const MAX_IDS_PER_REQUEST = 100;
 export const SYMBOLS_PER_REQUEST = 25;
+export const MAX_RWA_IDS_PER_REQUEST = 60;
+export const RWA_MAP_PAGE = 100;
 
 export type ClientCounters = {
   requests: number;
@@ -223,6 +231,33 @@ export class CmcClient {
       missing.push(...result.missing);
     }
     return { quotes, missing };
+  }
+
+  async getRwaMap(count: number): Promise<RwaMapEntry[]> {
+    return this.cache.getOrLoad(`rwa:map:${count}`, this.ttl.info, async () => {
+      const out: RwaMapEntry[] = [];
+      for (let start = 1; start <= count; start += RWA_MAP_PAGE) {
+        const body = await this.call(ENDPOINTS.rwaMap, { limit: Math.min(RWA_MAP_PAGE, count - out.length), start });
+        const page = parseRwaMap(body);
+        out.push(...page);
+        if (page.length < RWA_MAP_PAGE) break;
+      }
+      return out;
+    });
+  }
+
+  async getRwaQuotes(rwaIds: readonly number[]): Promise<RwaSnapshot[]> {
+    const unique = [...new Set(rwaIds)].sort((a, b) => a - b);
+    const out: RwaSnapshot[] = [];
+    for (let i = 0; i < unique.length; i += MAX_RWA_IDS_PER_REQUEST) {
+      const chunk = unique.slice(i, i + MAX_RWA_IDS_PER_REQUEST);
+      const assets = await this.cache.getOrLoad(`rwa:${chunk.join(",")}`, this.ttl.rwa, async () => {
+        const body = await this.call(ENDPOINTS.rwaQuotes, { rwa_id: chunk.join(",") });
+        return parseRwaQuotes(body, new Date(this.now()).toISOString());
+      });
+      out.push(...assets);
+    }
+    return out;
   }
 
   async getInfoByIds(ids: readonly number[]): Promise<TokenMeta[]> {

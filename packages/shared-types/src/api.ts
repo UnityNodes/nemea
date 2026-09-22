@@ -172,7 +172,7 @@ export type ChannelsView = {
 };
 
 export type PollLaneStatus = {
-  lane: "stablecoins" | "top" | "small" | "global" | "categories";
+  lane: "stablecoins" | "top" | "small" | "global" | "categories" | "rwa";
   intervalSeconds: number;
   lastSuccessAt: string | null;
   lastError: string | null;

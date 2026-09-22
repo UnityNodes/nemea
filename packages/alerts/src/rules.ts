@@ -261,6 +261,52 @@ export function volumeRules(ctx: RuleContext): Candidate[] {
   return out;
 }
 
+export const RWA_UNIT_MISMATCH_PCT = 25;
+
+export function rwaDriftRules(ctx: RuleContext): { candidates: Candidate[]; suppressed: Array<{ cmcId: number; detail: string }> } {
+  const out: Candidate[] = [];
+  const suppressed: Array<{ cmcId: number; detail: string }> = [];
+  const threshold = ctx.input.preferences.rwaDriftPct;
+  for (const { row, quote } of heldRows(ctx)) {
+    const asset = ctx.input.rwaByWrapperId.get(row.holding.cmcId);
+    if (!asset || quote.priceUsd === null) continue;
+    const anchor = asset.averageTokenizedPriceUsd;
+    if (anchor === null || anchor <= 0) continue;
+    const drift = (quote.priceUsd / anchor - 1) * 100;
+    if (Math.abs(drift) < threshold) continue;
+    if (Math.abs(drift) > RWA_UNIT_MISMATCH_PCT) {
+      suppressed.push({
+        cmcId: row.holding.cmcId,
+        detail: `${row.holding.symbol} sits ${pctAbs(drift)} from the average tokenised price of ${asset.symbol}, which is too far to be a market move; it almost certainly tracks a different unit of the asset`,
+      });
+      continue;
+    }
+    const share = valueShare(ctx.rows, row.holding.cmcId);
+    const severity = Math.abs(drift) >= threshold * 3 ? "critical" : "warning";
+    const wrapper = asset.wrappers.find((w) => w.cmcId === row.holding.cmcId);
+    const direction = drift < 0 ? "below" : "above";
+    out.push({
+      kind: "rwa_drift",
+      severity,
+      cmcId: row.holding.cmcId,
+      symbol: row.holding.symbol,
+      title: `${row.holding.symbol} is ${pctAbs(drift)} ${direction} what tokenised ${asset.symbol} normally trades at`,
+      summary: `${row.holding.symbol} is meant to track ${asset.name.replace(/\.$/, "")}. Across every tokenised version of it on CoinMarketCap the going price is ${usd(anchor)}, and yours is at ${usd(quote.priceUsd)}. The asset itself has not changed; this is a gap in the token that represents it.`,
+      facts: [
+        { label: "Your token", value: usd(quote.priceUsd) },
+        { label: `All tokenised ${asset.symbol}`, value: usd(anchor) },
+        { label: "Gap", value: pct(drift) },
+        ...(wrapper?.issuerName ? [{ label: "Issued by", value: wrapper.issuerName }] : []),
+        ...positionFacts(row, ctx),
+      ],
+      dedupeKey: `rwa_drift:${row.holding.cmcId}`,
+      score: score(severity, Math.abs(drift) * 3, share),
+      context: baseContext(row.holding.cmcId, { priceUsd: quote.priceUsd, averageTokenizedPriceUsd: anchor, driftPct: drift, rwaId: asset.rwaId, assetType: asset.assetType }, ctx),
+    });
+  }
+  return { candidates: out, suppressed };
+}
+
 export function categoryRules(ctx: RuleContext): Candidate[] {
   const out: Candidate[] = [];
   const market = ctx.input.global?.totalMarketCapChange24hPct ?? null;

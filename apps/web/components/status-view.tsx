@@ -17,6 +17,7 @@ const LANES: Record<PollLaneStatus["lane"], { label: string; body: string }> = {
   small: { label: "Smaller holdings", body: "Everything else, checked less often" },
   global: { label: "Whole market", body: "Overall market size and stablecoin volume" },
   categories: { label: "Sectors", body: "How groups of coins, such as Layer 1, are moving" },
+  rwa: { label: "Tokenised real-world assets", body: "Tokenised stocks, gold and treasuries. Only refreshed while somebody holds one, so it costs nothing otherwise" },
 };
 
 const ENDPOINTS: Array<{ path: string; name: string; use: string }> = [
@@ -26,6 +27,7 @@ const ENDPOINTS: Array<{ path: string; name: string; use: string }> = [
   { path: "/v2/cryptocurrency/info", name: "Coin information", use: "Names, tags and contract addresses, so the right coin is watched." },
   { path: "/v1/cryptocurrency/categories", name: "Categories", use: "How whole sectors are moving." },
   { path: "/v2/cryptocurrency/price-performance-stats/latest", name: "Price performance stats", use: "Highs and lows over time. Only used when the data plan allows it." },
+  { path: "/v5/real-world-assets/quotes/latest", name: "Tokenised real-world assets", use: "What a tokenised stock or commodity trades at across every issuer, so a drift in the one you hold is visible." },
 ];
 
 const VERDICTS: Record<SystemStatus["budgetVerdict"], { tone: "safe" | "warn" | "crit" | "neutral"; label: string; body: string }> = {
@@ -129,7 +131,7 @@ function LanesPanel({ status, now }: { status: SystemStatus; now: number }) {
                   <span className="block font-semibold">{LANES[lane.lane].label}</span>
                   <span className="block max-w-xs text-xs text-muted">{LANES[lane.lane].body}</span>
                 </th>
-                <td className="px-3 py-3">{cadenceLabel(lane.intervalSeconds)}</td>
+                <td className="px-3 py-3">{lane.intervalSeconds === 0 ? <span className="text-muted">only when held</span> : cadenceLabel(lane.intervalSeconds)}</td>
                 <td className="px-3 py-3">
                   {lane.lastSuccessAt ? <span title={formatDateTime(lane.lastSuccessAt)}>{relativeTime(lane.lastSuccessAt, now)}</span> : <span className="font-medium text-warn-text">never</span>}
                 </td>
@@ -148,7 +150,7 @@ function LanesPanel({ status, now }: { status: SystemStatus; now: number }) {
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div>
                 <dt className="text-xs font-semibold text-faint">Runs</dt>
-                <dd>{cadenceLabel(lane.intervalSeconds)}</dd>
+                <dd>{lane.intervalSeconds === 0 ? "only when held" : cadenceLabel(lane.intervalSeconds)}</dd>
               </div>
               <div>
                 <dt className="text-xs font-semibold text-faint">Last success</dt>

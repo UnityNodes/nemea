@@ -45,15 +45,16 @@ export class Evaluator {
   async loadInput(user: UserRow): Promise<EngineInput> {
     const holdings = await this.repo.holdingsOf(user.id);
     const ids = [...new Set(holdings.map((h) => h.cmcId))];
-    const [quotes, meta, global, categories, lows, past] = await Promise.all([
+    const [quotes, meta, global, categories, lows, rwaByWrapperId, past] = await Promise.all([
       this.market.quotesFor(ids),
       this.market.metaFor([...ids, ...PEGGED_IDS]),
       this.market.global(),
       this.market.categories(),
       this.market.lows(ids),
+      this.market.rwaByWrapperId(),
       this.repo.pastAlerts(user.id, 8),
     ]);
-    return { now: this.now(), holdings, quotes, meta, global, categories, preferences: user.preferences, peggedUsdIds: PEGGED_IDS, lows, past, maxQuoteAgeMs: this.maxQuoteAgeMs() };
+    return { now: this.now(), holdings, quotes, meta, global, categories, preferences: user.preferences, peggedUsdIds: PEGGED_IDS, lows, rwaByWrapperId, past, maxQuoteAgeMs: this.maxQuoteAgeMs() };
   }
 
   async persist(user: UserRow, emit: readonly Candidate[], simulated: boolean): Promise<AlertRow[]> {

@@ -2,6 +2,8 @@ export const SECONDS_PER_MONTH = 30 * 24 * 3600;
 export const BASE_TICK_SECONDS = 60;
 export const IDS_PER_CREDIT = 100;
 export const ON_DEMAND_RESERVE = 0.15;
+export const RWA_EVERY_CATEGORY_RUNS = 4;
+export const RWA_CREDITS_PER_REFRESH = 5;
 
 export type Cadence = {
   stablecoinsSec: number;
@@ -25,7 +27,7 @@ export type Workload = {
   smallIds: readonly number[];
 };
 
-export type LaneName = "stablecoins" | "top" | "small" | "global" | "categories";
+export type LaneName = "stablecoins" | "top" | "small" | "global" | "categories" | "rwa";
 
 export function scaleCadence(base: Cadence, multiplier: number): Cadence {
   const snap = (sec: number) => Math.max(BASE_TICK_SECONDS, Math.round((sec * multiplier) / BASE_TICK_SECONDS) * BASE_TICK_SECONDS);
@@ -76,7 +78,7 @@ export type CreditEstimate = {
   cycleTicks: number;
 };
 
-export function estimateMonthlyCredits(cadence: Cadence, workload: Workload): CreditEstimate {
+export function estimateMonthlyCredits(cadence: Cadence, workload: Workload, opts: { rwaRefreshes?: boolean } = {}): CreditEstimate {
   const periods = [
     ticksEvery(cadence.stablecoinsSec),
     ticksEvery(cadence.topSec),
@@ -100,6 +102,10 @@ export function estimateMonthlyCredits(cadence: Cadence, workload: Workload): Cr
     if (categoriesDueOnTick(tick, cadence)) {
       credits += 1;
       calls += 1;
+      if (opts.rwaRefreshes) {
+        credits += RWA_CREDITS_PER_REFRESH / RWA_EVERY_CATEGORY_RUNS;
+        calls += RWA_CREDITS_PER_REFRESH / RWA_EVERY_CATEGORY_RUNS;
+      }
     }
   }
   const cyclesPerMonth = SECONDS_PER_MONTH / (cycleTicks * BASE_TICK_SECONDS);

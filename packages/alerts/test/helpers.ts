@@ -62,6 +62,7 @@ export function input(over: Omit<Partial<EngineInput>, "quotes" | "meta"> & { qu
     preferences: { ...DEFAULT_PREFERENCES },
     peggedUsdIds: new Set<number>(),
     lows: new Map(),
+    rwaByWrapperId: new Map(),
     past: [],
     maxQuoteAgeMs: 30 * 60_000,
     ...rest,

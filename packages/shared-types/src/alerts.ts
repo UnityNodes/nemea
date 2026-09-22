@@ -11,6 +11,7 @@ export const ALERT_KINDS = [
   "volume_dry_up",
   "category_rotation",
   "portfolio_drop",
+  "rwa_drift",
 ] as const;
 export const AlertKind = z.enum(ALERT_KINDS);
 export type AlertKind = z.infer<typeof AlertKind>;
@@ -31,6 +32,7 @@ export const AlertPreferences = z.object({
   portfolioDropPct: z.number().min(2).max(90),
   nearLowWithinPct: z.number().min(1).max(50),
   categoryDropPct: z.number().min(2).max(90),
+  rwaDriftPct: z.number().min(1).max(50),
   weeklyCap: z.number().int().min(1).max(3),
   protectionLevel: ProtectionLevel,
   telegram: z.boolean(),
@@ -49,6 +51,7 @@ export const DEFAULT_PREFERENCES: AlertPreferences = {
   portfolioDropPct: 10,
   nearLowWithinPct: 10,
   categoryDropPct: 10,
+  rwaDriftPct: 3,
   weeklyCap: 3,
   protectionLevel: 1,
   telegram: true,

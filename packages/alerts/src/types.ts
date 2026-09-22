@@ -7,6 +7,7 @@ import type {
   Holding,
   PricePoint,
   QuoteSnapshot,
+  RwaSnapshot,
   Severity,
   TokenMeta,
 } from "@nemea/shared-types";
@@ -37,6 +38,7 @@ export type EngineInput = {
   preferences: AlertPreferences;
   peggedUsdIds: ReadonlySet<number>;
   lows: ReadonlyMap<number, PriceLow>;
+  rwaByWrapperId: ReadonlyMap<number, RwaSnapshot>;
   past: readonly PastAlert[];
   maxQuoteAgeMs: number;
   maxMarketContextAgeMs?: number;
@@ -64,7 +66,7 @@ export type Candidate = {
   context: AlertContext;
 };
 
-export type SuppressedReason = "cooldown" | "weekly_cap" | "rolled_into_portfolio_alert" | "stale_quote" | "no_data";
+export type SuppressedReason = "cooldown" | "weekly_cap" | "rolled_into_portfolio_alert" | "stale_quote" | "no_data" | "unit_mismatch";
 
 export type Suppressed = {
   kind: AlertKind;

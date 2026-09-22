@@ -1,4 +1,4 @@
-import type { AlertFact, AlertPreferences, CategorySnapshot, GlobalMetricsSnapshot, QuoteSnapshot, TokenMeta } from "@nemea/shared-types";
+import type { AlertFact, AlertPreferences, CategorySnapshot, GlobalMetricsSnapshot, QuoteSnapshot, RwaSnapshot, TokenMeta } from "@nemea/shared-types";
 import type { AlertContext, PriceLow } from "@nemea/alerts";
 import { boolean, doublePrecision, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
@@ -52,7 +52,7 @@ export const quoteLatest = pgTable("quote_latest", {
 
 export const marketSnapshots = pgTable("market_snapshots", {
   key: text("key").primaryKey(),
-  data: jsonb("data").$type<GlobalMetricsSnapshot | CategorySnapshot[]>().notNull(),
+  data: jsonb("data").$type<GlobalMetricsSnapshot | CategorySnapshot[] | RwaSnapshot[]>().notNull(),
   fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull(),
 });
 

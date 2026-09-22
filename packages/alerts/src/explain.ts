@@ -344,6 +344,38 @@ function portfolio(input: ExplainInput): Explanation {
   return { headline, sections, calmNote: CALM_NOTE, dataGaps: gaps };
 }
 
+function rwaDrift(input: ExplainInput): Explanation {
+  const { alert } = input;
+  const c = alert.context;
+  const symbol = alert.symbol ?? "This token";
+  const price = num(c.observed.priceUsd);
+  const anchor = num(c.observed.averageTokenizedPriceUsd);
+  const drift = num(c.observed.driftPct);
+  const assetType = typeof c.observed.assetType === "string" ? c.observed.assetType : null;
+  const thing = assetType === "stock" ? "a share in a real company" : assetType === "commodity" ? "a real commodity, like metal in a vault" : "a real-world asset";
+  const sections: ExplainSection[] = [
+    {
+      heading: "What do you actually own?",
+      body: `${symbol} is a token that stands for ${thing}. Think of a cloakroom ticket: the ticket is not the coat, it is a promise that the coat is there. Several companies issue their own ticket for the very same asset.`,
+    },
+    {
+      heading: "What happened?",
+      body: `All the tickets for this asset usually trade at about the same price${anchor !== null ? `, and right now that is ${usd(anchor)}` : ""}. Yours is at ${price !== null ? usd(price) : "a different price"}${drift !== null ? `, ${pctAbs(drift)} ${drift < 0 ? "below" : "above"} the others` : ""}. The asset in the vault has not changed. The gap is in the ticket, not the coat.`,
+    },
+    {
+      heading: "Why can this happen?",
+      body: "Usually because few people are trading that particular version right now, so one trade moves its price. It can also mean people trust one issuer less than another, or that the issuer has paused creating and redeeming tokens. Price data alone cannot tell which one it is.",
+    },
+  ];
+  sections.push(whatPeopleDo(true));
+  return {
+    headline: `${symbol} drifted from what the same asset costs elsewhere`,
+    sections,
+    calmNote: CALM_NOTE,
+    dataGaps: [],
+  };
+}
+
 export function explain(input: ExplainInput): Explanation {
   switch (input.alert.kind) {
     case "price_drop_1h":
@@ -363,5 +395,7 @@ export function explain(input: ExplainInput): Explanation {
       return category(input);
     case "portfolio_drop":
       return portfolio(input);
+    case "rwa_drift":
+      return rwaDrift(input);
   }
 }

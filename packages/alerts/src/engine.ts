@@ -9,6 +9,7 @@ import {
   nearLowRules,
   portfolioRules,
   priceDropRules,
+  rwaDriftRules,
   volumeRules,
 } from "./rules.ts";
 import type { Candidate, EngineInput, EngineOutput, PastAlert, Suppressed } from "./types.ts";
@@ -27,6 +28,7 @@ export const COOLDOWN_MS: Record<AlertKind, number> = {
   volume_dry_up: DAY,
   category_rotation: DAY,
   portfolio_drop: DAY,
+  rwa_drift: 12 * HOUR,
 };
 
 export const CRITICAL_PER_DAY_CAP = 3;
@@ -87,7 +89,10 @@ export function evaluate(raw: EngineInput): EngineOutput {
   }
 
   const ctx = buildRuleContext(input, rows, freshQuotes, stale + unpriced > 0);
+  const rwa = rwaDriftRules(ctx);
+  for (const s of rwa.suppressed) suppressed.push({ kind: "rwa_drift", cmcId: s.cmcId, reason: "unit_mismatch", detail: s.detail });
   const candidates: Candidate[] = [
+    ...rwa.candidates,
     ...priceDropRules(ctx),
     ...costBasisRules(ctx),
     ...nearLowRules(ctx),

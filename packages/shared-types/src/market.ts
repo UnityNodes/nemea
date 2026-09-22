@@ -72,3 +72,25 @@ export const PricePoint = z.object({
   priceUsd: z.number(),
 });
 export type PricePoint = z.infer<typeof PricePoint>;
+
+export const RwaWrapper = z.object({
+  cmcId: z.number().int(),
+  symbol: z.string(),
+  name: z.string(),
+  priceUsd: nullableNumber,
+  issuerName: z.string().nullable(),
+});
+export type RwaWrapper = z.infer<typeof RwaWrapper>;
+
+export const RwaSnapshot = z.object({
+  rwaId: z.number().int(),
+  symbol: z.string(),
+  name: z.string(),
+  assetType: z.string().nullable(),
+  averageTokenizedPriceUsd: nullableNumber,
+  tokenizedVolume24hUsd: nullableNumber,
+  wrappers: z.array(RwaWrapper),
+  cmcLastUpdated: z.string().nullable(),
+  fetchedAt: z.string(),
+});
+export type RwaSnapshot = z.infer<typeof RwaSnapshot>;

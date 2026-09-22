@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   DESIRED_CADENCE,
+  RWA_CREDITS_PER_REFRESH,
+  RWA_EVERY_CATEGORY_RUNS,
   creditsForIds,
   estimateMonthlyCredits,
   idsDueOnTick,
@@ -109,5 +111,27 @@ describe("cadence planner", () => {
   it("never scales a lane below the base tick", () => {
     const c = scaleCadence(DESIRED_CADENCE, 0.01);
     expect(c.stablecoinsSec).toBe(60);
+  });
+
+  it("costs nothing extra for a portfolio holding no tokenised assets", () => {
+    const plan = planCadence(15_000, small);
+    const without = estimateMonthlyCredits(plan.cadence, small);
+    const alsoWithout = estimateMonthlyCredits(plan.cadence, small, { rwaRefreshes: false });
+    expect(alsoWithout.perMonth).toBe(without.perMonth);
+  });
+
+  it("adds the real cost of watching tokenised assets only when something is held, and it is a small share of a free plan", () => {
+    const plan = planCadence(15_000, small);
+    const without = estimateMonthlyCredits(plan.cadence, small);
+    const withRwa = estimateMonthlyCredits(plan.cadence, small, { rwaRefreshes: true });
+    const categoryRunsPerMonth = (30 * 24 * 3600) / plan.cadence.categoriesSec;
+    const expected = Math.ceil(categoryRunsPerMonth / RWA_EVERY_CATEGORY_RUNS) * RWA_CREDITS_PER_REFRESH;
+    expect(withRwa.perMonth - without.perMonth).toBeGreaterThan(0);
+    expect(withRwa.perMonth - without.perMonth).toBeLessThanOrEqual(expected + RWA_CREDITS_PER_REFRESH);
+    expect((withRwa.perMonth - without.perMonth) / 15_000).toBeLessThan(0.05);
+  });
+
+  it("does not slow the stablecoin peg check just because tokenised assets exist", () => {
+    expect(planCadence(15_000, small).cadence.stablecoinsSec).toBe(240);
   });
 });

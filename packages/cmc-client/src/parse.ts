@@ -1,4 +1,4 @@
-import type { CategorySnapshot, Chain, GlobalMetricsSnapshot, PricePoint, QuoteSnapshot, TokenMeta } from "@nemea/shared-types";
+import type { CategorySnapshot, Chain, GlobalMetricsSnapshot, PricePoint, QuoteSnapshot, RwaSnapshot, RwaWrapper, TokenMeta } from "@nemea/shared-types";
 import { CmcSchemaError } from "./errors.ts";
 
 type Json = Record<string, unknown>;
@@ -220,4 +220,64 @@ export function parsePriceStatsAllTime(body: unknown, id: number): PriceStats | 
   const low = num(usd?.low);
   if (low === null) return null;
   return { lowUsd: low, lowAt: str(allTime?.low_timestamp) ?? str(usd?.low_timestamp) };
+}
+
+export function parseRwaQuotes(body: unknown, fetchedAt: string): RwaSnapshot[] {
+  const data = obj(obj(body)?.data);
+  const assets = data?.rwa_assets;
+  if (!Array.isArray(assets)) throw new CmcSchemaError("real-world-assets/quotes/latest", "data.rwa_assets is not an array");
+  const out: RwaSnapshot[] = [];
+  for (const raw of assets) {
+    const asset = obj(raw);
+    const rwaId = num(asset?.rwa_id);
+    const symbol = str(asset?.symbol);
+    const name = str(asset?.name);
+    if (rwaId === null || !symbol || !name) continue;
+    const usd = usdQuote(asset?.quotes);
+    const wrappers: RwaWrapper[] = [];
+    if (Array.isArray(asset?.tokens)) {
+      for (const rawToken of asset.tokens) {
+        const token = obj(rawToken);
+        const cmcId = num(token?.crypto_id);
+        const tokenSymbol = str(token?.symbol);
+        if (cmcId === null || !tokenSymbol) continue;
+        wrappers.push({
+          cmcId,
+          symbol: tokenSymbol,
+          name: str(token?.name) ?? tokenSymbol,
+          priceUsd: num(token?.price),
+          issuerName: str(token?.issuer_name),
+        });
+      }
+    }
+    out.push({
+      rwaId,
+      symbol,
+      name,
+      assetType: str(asset?.asset_type),
+      averageTokenizedPriceUsd: num(asset?.average_tokenized_price) ?? num(usd?.average_tokenized_price),
+      tokenizedVolume24hUsd: num(asset?.tokenized_volume_24h) ?? num(usd?.tokenized_volume_24h),
+      wrappers,
+      cmcLastUpdated: str(asset?.last_updated),
+      fetchedAt,
+    });
+  }
+  return out;
+}
+
+export type RwaMapEntry = { rwaId: number; symbol: string; name: string; rank: number | null; hasTokens: boolean };
+
+export function parseRwaMap(body: unknown): RwaMapEntry[] {
+  const data = obj(obj(body)?.data);
+  const assets = data?.rwa_assets;
+  if (!Array.isArray(assets)) throw new CmcSchemaError("real-world-assets/map", "data.rwa_assets is not an array");
+  const out: RwaMapEntry[] = [];
+  for (const raw of assets) {
+    const entry = obj(raw);
+    const rwaId = num(entry?.rwa_id);
+    const symbol = str(entry?.symbol);
+    if (rwaId === null || !symbol) continue;
+    out.push({ rwaId, symbol, name: str(entry?.name) ?? symbol, rank: num(entry?.rwa_rank), hasTokens: entry?.has_tokens === true });
+  }
+  return out;
 }

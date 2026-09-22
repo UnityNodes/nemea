@@ -1,4 +1,4 @@
-import { BASE_TICK_SECONDS, CmcRateLimitError, categoriesDueOnTick, globalDueOnTick, idsDueOnTick, planCadence, type Cadence, type CadencePlan } from "@nemea/cmc-client";
+import { BASE_TICK_SECONDS, CmcRateLimitError, categoriesDueOnTick, estimateMonthlyCredits, globalDueOnTick, idsDueOnTick, planCadence, type Cadence, type CadencePlan } from "@nemea/cmc-client";
 import { priceRows } from "@nemea/alerts";
 import type { PollLaneStatus } from "@nemea/shared-types";
 import type { Db } from "../db/client.ts";
@@ -11,6 +11,8 @@ import { buildWorkload, type Workload } from "./watchlist.ts";
 
 const REPLAN_EVERY_TICKS = 60;
 const LOW_REFRESH_EVERY_TICKS = 30;
+const RWA_EVERY_CATEGORY_RUNS = 4;
+const RWA_WATCH_COUNT = 300;
 const LOWS_PER_RUN = 3;
 const PAUSE_ON_QUOTA_MS = 30 * 60_000;
 const DIGEST_HOUR_UTC = 8;
@@ -39,6 +41,8 @@ export class Poller {
   private running = false;
   private quotaWarnedOn: string | null = null;
   private readonly lanes = new Map<LaneName, LaneState>();
+  private categoryRuns = 0;
+  private rwaHeld = false;
 
   constructor(
     private readonly db: Db,
@@ -52,18 +56,20 @@ export class Poller {
 
   status(): PollerStatus {
     const cadence = this.plan?.cadence;
+    const plan = this.plan && this.rwaHeld && cadence ? { ...this.plan, estimatedCreditsPerMonth: estimateMonthlyCredits(cadence, this.workload, { rwaRefreshes: true }).perMonth } : this.plan;
     const interval: Record<LaneName, number> = {
       stablecoins: cadence?.stablecoinsSec ?? 0,
       top: cadence?.topSec ?? 0,
       small: cadence?.smallSec ?? 0,
       global: cadence?.globalSec ?? 0,
       categories: cadence?.categoriesSec ?? 0,
+      rwa: cadence && this.rwaHeld ? cadence.categoriesSec * RWA_EVERY_CATEGORY_RUNS : 0,
     };
     const lanes: PollLaneStatus[] = (Object.keys(interval) as LaneName[]).map((lane) => {
       const s = this.lanes.get(lane);
       return { lane, intervalSeconds: interval[lane], lastSuccessAt: s?.lastSuccessAt?.toISOString() ?? null, lastError: s?.lastError ?? null, itemCount: s?.itemCount ?? 0 };
     });
-    return { plan: this.plan, creditLimitMonthly: this.creditLimit, lanes, pausedUntil: this.pausedUntil > this.now().getTime() ? new Date(this.pausedUntil).toISOString() : null, ticks: this.tickCount };
+    return { plan, creditLimitMonthly: this.creditLimit, lanes, pausedUntil: this.pausedUntil > this.now().getTime() ? new Date(this.pausedUntil).toISOString() : null, ticks: this.tickCount };
   }
 
   maxQuoteAgeMs(): number {
@@ -89,6 +95,14 @@ export class Poller {
   stop(): void {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
+  }
+
+  private async rwaWorthRefreshing(): Promise<boolean> {
+    const index = await this.market.rwaByWrapperId();
+    if (index.size === 0) return true;
+    const held = [...this.workload.stablecoinIds, ...this.workload.topIds, ...this.workload.smallIds];
+    this.rwaHeld = held.some((id) => index.has(id));
+    return this.rwaHeld;
   }
 
   private async record(lane: LaneName, outcome: { ok: true; items: number } | { ok: false; error: string }): Promise<void> {
@@ -186,6 +200,14 @@ export class Poller {
       } catch (error) {
         await this.record("categories", { ok: false, error: this.handleFailure(error, "categories") });
       }
+      if (this.categoryRuns % RWA_EVERY_CATEGORY_RUNS === 0 && (await this.rwaWorthRefreshing())) {
+        try {
+          await this.record("rwa", { ok: true, items: await this.market.refreshRwa(RWA_WATCH_COUNT) });
+        } catch (error) {
+          await this.record("rwa", { ok: false, error: this.handleFailure(error, "rwa") });
+        }
+      }
+      this.categoryRuns += 1;
     }
     await this.fillMissingMeta();
     if (n % LOW_REFRESH_EVERY_TICKS === 0) await this.refreshLows();
